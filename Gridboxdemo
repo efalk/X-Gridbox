@@ -1,4 +1,4 @@
-! $Id$
+! $Id: Gridboxdemo,v 1.1 1998/08/06 23:26:24 falk Exp falk $
 
 ! Application-wide actions table.
 
@@ -8,15 +8,7 @@ Gridboxdemo.baseTranslations: #augment\n\
 
 ! defaults go here.
 
-gridboxdemo*background:	grey
-
-!*gridbox.width: 450
-!*gridbox.height: 450
-*gridbox.borderWidth: 4
 *gridbox.defaultDistance: 0
-
-!*Gridboxdemo.font:	-*-lucida sans-medium-r-normal-*-10-*-*-*-*-*-iso8859-*
-*Gridboxdemo.font:	-*-lucida-medium-r-normal-sans-10-*-*-*-*-*-iso8859-*
 
 !*weightx:	1
 !*weighty:	1
@@ -131,15 +123,7 @@ gridboxdemo*background:	grey
 
 *l1.bitmap:	/usr/X11/include/X11/bitmaps/xlogo32
 *l1.borderWidth: 0
-*l1.borderColor: blue
-!*l1.shadowWidth: 2
 *l1.gridx:	3
 *l1.gridy:	3
 *l1.gridWidth:	2
 *l1.gridHeight:	2
-
-!	general style preferences
-
-!*Gridboxdemo.beNiceToColormap: true
-!*shadowWidth: 2
-!*borderWidth: 0
