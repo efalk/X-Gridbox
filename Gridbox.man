@@ -1,5 +1,5 @@
 '\" t
-." $Id: Gridbox.man,v 1.3 1999/03/26 23:31:40 falk Exp falk $
+." $Id: Gridbox.man,v 1.4 1999/07/17 19:55:03 falk Exp falk $
 ." view with "tbl | nroff -man"
 ."
 .TH "Gridbox" 3 "Aug 1998" "Version 1.0" ""
@@ -121,12 +121,12 @@ A menu bar may be created in Athena through the use of a grid box:
 .IP 1
 Create a gridbox
 .IP 2
-Create a menuButton for each menu.  Set the \fBborderWidth\fP
+Create a MenuButton for each menu.  Set the \fBborderWidth\fP
 and \fBshadowWidth\fP
-of all menuButtons to zero.  Set \fBgridx\fP to the button's position
+of all MenuButtons to zero.  Set \fBgridx\fP to the button's position
 in the menu bar.  Set \fBgridy\fP to zero.
 .IP 3
-The "Help" menuButton is given a \fBweightx\fP constraint of 1 so that its
+The "Help" MenuButton is given a \fBweightx\fP constraint of 1 so that its
 cell will fill the rest of the menu bar.  The \fBfill\fP constraint is set
 to \fBnone\fP so that the button is not resized.  The \fBgravity\fP constraint
 is set to \fBeast\fP so that the button is at the east end of the menu bar.
@@ -140,12 +140,12 @@ and sizing is done through negotiation.  A widget asks to be a certain
 size, and its manager either grants the request, denies it, or
 offers a compromise.  The requesting widget may then ask for the compromise.
 .LP
-When a widget's \fBfill\fP constraint resource is not set to \fBnone\fP,
-it will most likely be offerred a size compromise larger than
-it requested.
+When a widget's \fBfill\fP constraint resource is set to anything but
+\fBnone\fP, it will most likely be offerred a size compromise larger than
+it requested.  Most widgets will accept the compromise.
 .LP
 Some widgets, for example the Athena Label widget, never accept compromises.
-Further, the Label widget \fIalways\fP asks to be resized whenever its
+Further, the Label widget always asks to be resized whenever its
 label changes.  As a result of all this, \fBfill\fP constraint of
 an Athena Label -- and probably other widgets as well -- should be set
 to \fBnone\fP if you encounter problems with widget resizing.
