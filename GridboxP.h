@@ -1,4 +1,4 @@
-/* $Id: GridboxP.h,v 2.0 1999/10/19 21:50:50 falk Exp falk $
+/* $Id: GridboxP.h,v 2.1 1999/12/12 07:27:33 falk Exp falk $
  *
  * GridboxP.h - Private definitions for Gridbox widget
  */
@@ -85,6 +85,7 @@ typedef struct _GridboxConstraintsPart {
     int		weightx,	/* how much excess space to absorb	*/
     		weighty ;
     int		margin ;
+    Boolean	allowResize ;
 /*
  * Private contstraint resources.
  */
