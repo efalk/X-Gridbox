@@ -1,4 +1,4 @@
-static	char	rcsid[] = "$Id: gridboxdemo.c,v 1.2 1998/12/16 19:55:06 falk Rel falk $" ;
+static	char	rcsid[] = "$Id: gridboxdemo.c,v 1.3 1999/03/26 19:27:31 falk Exp $" ;
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -27,6 +27,7 @@ static	Atom	wm_delete_window ;
 static	XtAppContext	app_ctx ;
 
 static	Widget	topLevel ;
+static	Widget	toolBar, l1, b0,b1,b2,b3 ;
 
 static String fallback[] = {
 	"Gridboxdemo.baseTranslations: <Message>WM_PROTOCOLS: WMProtocols()",
@@ -175,7 +176,19 @@ static String fallback[] = {
 	NULL
 };
 
+#ifdef	__STDC__
+static	void	mcb0(Widget, XtPointer, XtPointer) ;
+static	void	mcb1(Widget, XtPointer, XtPointer) ;
+static	void	mcb2(Widget, XtPointer, XtPointer) ;
+static	void	mcb3(Widget, XtPointer, XtPointer) ;
 static	void	WMProtocols(Widget, XEvent *, String *, Cardinal *) ;
+#else
+static	void	mcb0() ;
+static	void	mcb1() ;
+static	void	mcb2() ;
+static	void	mcb3() ;
+static	void	WMProtocols() ;
+#endif
 
 
 	/* define global actions table for the application.  This is done
@@ -192,6 +205,7 @@ static	XtActionsRec	gridbox_actions[] = {
 static	void	GridboxDemo() ;
 
 
+int
 main(int argc, char **argv)
 {
 	topLevel = XtAppInitialize(&app_ctx, "Gridboxdemo", NULL,0,
@@ -220,7 +234,7 @@ main(int argc, char **argv)
 static	void
 GridboxDemo()
 {
-  Widget	mainGrid, menuBar, toolBar, scrollGrid, gridbox ;
+  Widget	mainGrid, menuBar, scrollGrid, gridbox ;
 
   mainGrid = XtCreateManagedWidget("mainGrid",
 	gridboxWidgetClass, topLevel, NULL, 0) ;
@@ -228,7 +242,7 @@ GridboxDemo()
   menuBar = XtCreateManagedWidget("menuBar",
 	gridboxWidgetClass, mainGrid, NULL, 0) ;
 
-  toolBar = XtCreateManagedWidget("toolBar",
+  toolBar = XtCreateWidget("toolBar",
 	gridboxWidgetClass, mainGrid, NULL, 0) ;
 
   scrollGrid = XtCreateManagedWidget("scrollGrid",
@@ -256,8 +270,14 @@ GridboxDemo()
   (void) XtVaCreateManagedWidget("sl", labelWidgetClass, scrollGrid, 0) ;
 
   /* fill the grid box */
-  (void) XtVaCreateManagedWidget("b0", commandWidgetClass, gridbox, 0) ;
-  (void) XtVaCreateManagedWidget("b1", commandWidgetClass, gridbox, 0) ;
+  b0 = XtVaCreateManagedWidget("b0", commandWidgetClass, gridbox, 0) ;
+  XtAddCallback(b0, XtNcallback, mcb0, NULL) ;
+  b1 = XtVaCreateManagedWidget("b1", commandWidgetClass, gridbox, 0) ;
+  XtAddCallback(b1, XtNcallback, mcb1, NULL) ;
+  b2 = XtVaCreateManagedWidget("b2", commandWidgetClass, gridbox, 0) ;
+  XtAddCallback(b2, XtNcallback, mcb2, NULL) ;
+  b3 = XtVaCreateManagedWidget("b3", commandWidgetClass, gridbox, 0) ;
+  XtAddCallback(b3, XtNcallback, mcb3, NULL) ;
   (void) XtVaCreateManagedWidget("b2", commandWidgetClass, gridbox, 0) ;
   (void) XtVaCreateManagedWidget("b3", commandWidgetClass, gridbox, 0) ;
   (void) XtVaCreateManagedWidget("b4", commandWidgetClass, gridbox, 0) ;
@@ -269,7 +289,7 @@ GridboxDemo()
   (void) XtVaCreateManagedWidget("b10", commandWidgetClass, gridbox, 0) ;
   (void) XtVaCreateManagedWidget("b11", commandWidgetClass, gridbox, 0) ;
   (void) XtVaCreateManagedWidget("b12", commandWidgetClass, gridbox, 0) ;
-  (void) XtVaCreateManagedWidget("l1", labelWidgetClass, gridbox, 0) ;
+  l1 = XtVaCreateWidget("l1", labelWidgetClass, gridbox, 0) ;
   (void) XtVaCreateManagedWidget("b15", commandWidgetClass, gridbox, 0) ;
   (void) XtVaCreateManagedWidget("b16", commandWidgetClass, gridbox, 0) ;
   (void) XtVaCreateManagedWidget("b19", commandWidgetClass, gridbox, 0) ;
@@ -283,6 +303,51 @@ GridboxDemo()
 
 
 
+/* ARGSUSED */
+
+static	void
+mcb0(w, client, data)
+    Widget	w ;
+    XtPointer	client ;
+    XtPointer	data ;
+{
+    XtManageChild(toolBar) ;
+    XtSetSensitive(b0,False) ;
+    XtSetSensitive(b2,True) ;
+}
+
+static	void
+mcb1(w, client, data)
+    Widget	w ;
+    XtPointer	client ;
+    XtPointer	data ;
+{
+    XtManageChild(l1) ;
+    XtSetSensitive(b1,False) ;
+    XtSetSensitive(b3,True) ;
+}
+
+static	void
+mcb2(w, client, data)
+    Widget	w ;
+    XtPointer	client ;
+    XtPointer	data ;
+{
+    XtUnmanageChild(toolBar) ;
+    XtSetSensitive(b0,True) ;
+    XtSetSensitive(b2,False) ;
+}
+
+static	void
+mcb3(w, client, data)
+    Widget	w ;
+    XtPointer	client ;
+    XtPointer	data ;
+{
+    XtUnmanageChild(l1) ;
+    XtSetSensitive(b1,True) ;
+    XtSetSensitive(b3,False) ;
+}
 
 /* ARGSUSED */
 
