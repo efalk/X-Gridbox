@@ -2,15 +2,19 @@
 Begin3
 Title:		Gridbox - gridbox widget for X
 Version:	1.0
-Entered-date:	3 Aug 1998
-Description:	Display multiple child widgets in rows and columns.
+Entered-date:	26 Mar 1999
+Description:	Constraint widget.
+		Display multiple child widgets in rows and columns.
 		Sizes of rows and columns vary according to the needs
 		of the child widgets they contain.
 		Child widgets may occupy multiple cells.
+		Inspired by Java GridBag layout.
+		Gridbox is subclassed from Xt Constraint and
+		depends on no other widgets or libraries.
 Keywords:	X11 Xt Intrinsics grid widget
 Author:		Edward A. Falk <falk@falconer.vip.best.com>
 Maintained-by:	Edward A. Falk <falk@falconer.vip.best.com>
-Primary-site:	
+Primary-site:	www.best.com/~falconer/Widgets/#gridbox
 Alternate-site: 
 Original-site:	
 Platforms:	Linux, Unix.
