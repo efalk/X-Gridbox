@@ -1,4 +1,4 @@
-/* $Id: Gridbox.h,v 1.2 1999/02/21 00:30:24 falk Exp falk $
+/* $Id: Gridbox.h,v 1.3 1999/03/26 18:49:59 falk Exp falk $
  *
  * This widget manages multiple child widgets, arranging them in a
  * rectangular grid.  Child widgets may occupy multiple grid cells.
@@ -55,6 +55,9 @@
 
 
   gridx, gridy		position of child in grid.  Upper-left cell is 0,0
+  			May be specified as GRIDBOX_NEXT to place after
+			the previous child or GRIDBOX_SAME to place in
+			the same row/column.
   gridWidth,gridHeight	size of child in cells.
   fill			"none", "width", "height" or "both"
   			(also: "fillnone", "fillwidth", "horizontal", "x",
@@ -79,6 +82,7 @@
 #define	XtCFill		"Fill"
 #define	XtCWeight	"Weight"
 #define	XtRFillType	"FillType"
+#define	XtRGridPosition	"GridPosition"
 #endif
 
 #ifndef	XtNdefaultDistance
@@ -96,6 +100,9 @@ typedef	unsigned int	FillType ;
 #define	FillWidth	1
 #define	FillHeight	2
 #define	FillBoth	(FillWidth|FillHeight)
+
+#define	GRIDBOX_NEXT	-1
+#define	GRIDBOX_SAME	-2
 
 typedef	struct _GridboxClassRec	*GridboxWidgetClass ;
 typedef	struct _GridboxRec	*GridboxWidget ;

@@ -1,5 +1,5 @@
 '\" t
-." $Id: Gridbox.man,v 1.4 1999/07/17 19:55:03 falk Exp falk $
+." $Id: Gridbox.man,v 1.5 1999/07/30 17:19:59 falk Exp falk $
 ." view with "tbl | nroff -man"
 ."
 .TH "Gridbox" 3 "Aug 1998" "Version 1.0" ""
@@ -18,9 +18,11 @@ how the child widgets are resized when the parent Gridbox is resized.
 
 .SH CLASS
 Compound => Constraint => Gridbox
+.br
+Compound => Constraint => XmManager => Gridbox
 
 Gridbox does not require any specific widget set, and may be combined with
-any other widget set.
+any other widget set.  Compile with -DUSE_MOTIF for Motif compatibility.
 
 .SH RESOURCES
 
@@ -63,8 +65,8 @@ gridx	Position	Position	0
 gridy	Position	Position	0
 gridWidth	Width	Dimension	1
 gridHeight	Height	Dimension	1
-fill	Fill	FillType	both
-gravity	Gravity	int	Center
+fill	Fill	FillType	FillBoth
+gravity	Gravity	int	CenterGravity
 weightx	Weight	int	0
 weighty	Weight	int	0
 margin	Margin	int	defaultDistance
@@ -76,21 +78,31 @@ margin	Margin	int	defaultDistance
 .TP
 .B gridx, gridy
 The widget's position in the grid.  Upper-left corner is 0,0
+Either gridx or gridy may be specified as GRIDBOX_NEXT, meaning that the
+widget should be placed to the right of or below the previous
+child, or GRIDBOX_SAME, meaning that the widget should be placed in the
+same row or column.
+
+In resources databases, these values may be specified as
+"next", "gridnext", "gridboxnext", "same", "gridsame", or
+"gridboxsame".  Case is not significant.
 .TP
 .B gridWidth, gridHeight
 Widget size in cells.
 .TP
 .B fill
 Determines how the widget is resized to fill its cell.  Value
-may be any of \fBnone\fP, \fBwidth\fP, \fBheight\fP, and \fBboth\fP.
+may be any of \fBFillNone\fP, \fBFillWidth\fP, \fBFillHeight\fP,
+and \fBFillBoth\fP.
 .TP
 .B gravity
 Determines how the widget is positioned within its cell.
 Acceptable values are
-\fBNorthWest, North, NorthEast, West, Center, East, SouthWest, South,\fP
-and
-\fBSouthEast\fP.
-This resource has no effect if the widget's \fBfill\fP resource is "both".
+\fBNorthWestGravity, NorthGravity, NorthEastGravity, WestGravity,
+CenterGravity, EastGravity, SouthWestGravity, SouthGravity,\fP
+and \fBSouthEastGravity\fP.
+This resource has no effect if the widget's \fBfill\fP resource
+is "FillBoth".
 .TP
 .B weightx, weighty
 Determines how the widget's cell is resized in response to Gridbox resize.
@@ -109,12 +121,11 @@ If all weights are zero, the rows and columns are not resized.
 .SH PROGRAMMING TIPS
 Every child of a Gridbox widget must be assigned \fBgridx\fP
 and \fBgridy\fP
-constraints, or they will all overlap each other in the upper-left corner
-of the Gridbox.
+constraints, or they will all overlap each other in cell 0,0.
 .LP
 \fINote:\fP unless, of course, this is what you want.  If all Gridbox
-children are assigned the same cell, with \fBfill\fP set to \fBboth\fP,
-they will also be assigned the same dimensions.  You could then control
+children are assigned the same cell, with \fBfill\fP set to \fBFillBoth\fP,
+they will all be assigned the same dimensions.  You could then control
 their visibility by altering their stacking order.
 .LP
 A menu bar may be created in Athena through the use of a grid box:
@@ -128,8 +139,9 @@ in the menu bar.  Set \fBgridy\fP to zero.
 .IP 3
 The "Help" MenuButton is given a \fBweightx\fP constraint of 1 so that its
 cell will fill the rest of the menu bar.  The \fBfill\fP constraint is set
-to \fBnone\fP so that the button is not resized.  The \fBgravity\fP constraint
-is set to \fBeast\fP so that the button is at the east end of the menu bar.
+to \fBFillNone\fP so that the button is not resized.
+The \fBgravity\fP constraint is set to \fBEastGravity\fP so
+that the button is at the east end of the menu bar.
 .IP
 Alternatively, a blank label widget (or perhaps one containing a logo) is
 placed between the left buttons and the Help button, and allowed to fill
@@ -141,20 +153,19 @@ size, and its manager either grants the request, denies it, or
 offers a compromise.  The requesting widget may then ask for the compromise.
 .LP
 When a widget's \fBfill\fP constraint resource is set to anything but
-\fBnone\fP, it will most likely be offerred a size compromise larger than
+\fBnone\fP, it will most likely be offered a size compromise larger than
 it requested.  Most widgets will accept the compromise.
 .LP
-Some widgets, for example the Athena Label widget, never accept compromises.
-Further, the Label widget always asks to be resized whenever its
-label changes.  As a result of all this, \fBfill\fP constraint of
-an Athena Label -- and probably other widgets as well -- should be set
-to \fBnone\fP if you encounter problems with widget resizing.
+Some widgets, for example the Athena Label widget, never accept
+compromises.  Further, the Label widget always asks to be resized whenever
+its label changes.  As a result of all this, \fBfill\fP constraint of
+an Athena Label -- and probably many other widgets as well -- should be
+set to \fBnone\fP if you encounter problems with widget resizing.
 
 
 .SH BUGS
 
-Motif keyboard traversal may not work within Gridbox.  Motif Text
-widgets may not work properly for this reason.
+You tell me.
 
 
 .SH AUTHOR
@@ -168,10 +179,10 @@ is not removed from it.
 The X Consortium, and any party obtaining a copy of these files
 from the X Consortium, directly or indirectly, is granted, free of
 charge, a full and unrestricted irrevocable, world-wide, paid up,
-royalty-free, nonexclusive right and license to deal in this
+royalty-free, non-exclusive right and license to deal in this
 software and documentation files (the "Software"), including
 without limitation the rights to use, copy, modify, merge, publish,
-distribute, sublicense, and sell copies of the Software, and to
+distribute, sub-license, and sell copies of the Software, and to
 permit persons who receive copies from any such party to do so.
 
 
