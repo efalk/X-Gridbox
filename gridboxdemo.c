@@ -1,4 +1,4 @@
-static	char	rcsid[] = "$Id: gridboxdemo.c,v 1.3 1999/03/26 19:27:31 falk Exp $" ;
+static	char	rcsid[] = "$Id: gridboxdemo.c,v 1.4 1999/07/30 17:12:39 falk Exp falk $" ;
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -278,8 +278,6 @@ GridboxDemo()
   XtAddCallback(b2, XtNcallback, mcb2, NULL) ;
   b3 = XtVaCreateManagedWidget("b3", commandWidgetClass, gridbox, 0) ;
   XtAddCallback(b3, XtNcallback, mcb3, NULL) ;
-  (void) XtVaCreateManagedWidget("b2", commandWidgetClass, gridbox, 0) ;
-  (void) XtVaCreateManagedWidget("b3", commandWidgetClass, gridbox, 0) ;
   (void) XtVaCreateManagedWidget("b4", commandWidgetClass, gridbox, 0) ;
   (void) XtVaCreateManagedWidget("b5", commandWidgetClass, gridbox, 0) ;
   (void) XtVaCreateManagedWidget("b6", commandWidgetClass, gridbox, 0) ;
