@@ -1,4 +1,4 @@
-/* $Id: Gridbox.c,v 1.4 1999/07/01 16:33:56 falk Exp falk $
+/* $Id: Gridbox.c,v 1.5 1999/07/17 15:31:07 falk Exp falk $
  *
  * Gridbox.c - Gridbox composite widget
  *
@@ -27,6 +27,10 @@
  * determine how they are resized if the parent widget is resized.
  *
  * $Log: Gridbox.c,v $
+ * Revision 1.5  1999/07/17 15:31:07  falk
+ * Re-arranged layout code.  Uses fill constraint even on initial layout
+ * and child resize request.  Fixed bug when child asks to shrink.
+ *
  * Revision 1.4  1999/07/01 16:33:56  falk
  * Added more caching of width/height info.  Handles query-only and
  * rejected requests much better.
@@ -485,13 +489,10 @@ GridboxGeometryManager(w, request, reply)
     GridboxWidget	gb = (GridboxWidget) XtParent(w);
     GridboxConstraints	gc = (GridboxConstraints) w->core.constraints;
     XtWidgetGeometry	myreply ;
+    XtGeometryResult	result ;
     int			queryOnly = request->request_mode & XtCWQueryOnly ;
     int			margin ;
     Position		x,y ;
-
-/* BUG: child asks for 171x32, gets different size, even though
- * parent grants all requests
- */
 
     /* Position & border requests always denied */
     /* TODO: allow border requests. */
@@ -521,19 +522,12 @@ GridboxGeometryManager(w, request, reply)
     old_ch = gc->gridbox.prefHeight ;
 
 
-/* request: 171x32 */
-
     /* set child's preferred size to the request value */
     margin = 2*w->core.border_width + 2*gc->gridbox.margin ;
     if( request->request_mode & (CWWidth|CWBorderWidth) )
       gc->gridbox.prefWidth = request->width + margin ;
     if( request->request_mode & (CWHeight|CWBorderWidth) )
       gc->gridbox.prefHeight = request->height + margin ;
-
-/* margin = 8
- * prefwid = 171+8
- * prefhgt = 32+8
- */
 
     /* recompute row & column sizes */
     /* TODO: can this be short-cutted to only compute the
@@ -545,15 +539,22 @@ GridboxGeometryManager(w, request, reply)
 
 
 
-    /* resize myself to accomodate request; accept any compromise */
+    /* resize myself to accomodate request; make this a query to start;
+     * the child may not want the compromise I offer.
+     */
+
+    result = changeGeometry(gb, new_width, new_height, True, &myreply) ;
+
+#ifdef	COMMENT
     if( changeGeometry(gb, new_width, new_height, queryOnly, &myreply)
     		== XtGeometryAlmost && !queryOnly )
       (void) changeGeometry(gb, myreply.width, myreply.height, False, &myreply);
+#endif	/* COMMENT */
 
 
     /* If my size changes at all, recompute all column & row sizes. */
 
-    if( myreply.width != old_width  ||  myreply.height != old_height )
+    if( result != XtGeometryNo )
       layout(gb, myreply.width, myreply.height) ;
 
 
@@ -569,17 +570,21 @@ GridboxGeometryManager(w, request, reply)
       gc->gridbox.prefWidth = old_cw ;
       gc->gridbox.prefHeight = old_ch ;
       computeWidHgtMax(gb) ;
-      if( myreply.width != old_width  ||  myreply.height != old_height )
+      if( result != XtGeometryNo )
 	layout(gb, old_width, old_height) ;
     }
 
 
+    /* can't change */
     if( cell_width == w->core.width && cell_height == w->core.height )
       return XtGeometryNo ;
 
+    /* request granted */
     if( cell_width == request->width && cell_height == request->height )
     {
       if( !queryOnly ) {
+	(void) changeGeometry(gb, myreply.width, myreply.height, False, NULL);
+	/* TODO: necessary? */
 	XtClass((Widget)gb)->core_class.resize((Widget)gb) ;
 	return XtGeometryDone ;
       }
@@ -1113,21 +1118,22 @@ changeGeometry(gb, req_width,req_height, queryOnly, reply)
       }
     }
     else
-      result = XtGeometryYes ;
+      result = XtGeometryNo ;
 
-    switch( result ) {
-      case XtGeometryYes:
-      case XtGeometryDone:
-	reply->width = req_width ;
-	reply->height = req_height ;
-	break ;
-      case XtGeometryNo:
-	reply->width = old_width ;
-	reply->height = old_height ;
-	break ;
-      case XtGeometryAlmost:
-	break ;
-    }
+    if( reply != NULL )
+      switch( result ) {
+	case XtGeometryYes:
+	case XtGeometryDone:
+	  reply->width = req_width ;
+	  reply->height = req_height ;
+	  break ;
+	case XtGeometryNo:
+	  reply->width = old_width ;
+	  reply->height = old_height ;
+	  break ;
+	case XtGeometryAlmost:
+	  break ;
+      }
 
     return result ;
 }
