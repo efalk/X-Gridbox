@@ -1,4 +1,4 @@
-/* $Id: Gridbox.c,v 2.1 1999/12/12 06:05:06 falk Exp falk $
+/* $Id: Gridbox.c,v 2.2 1999/12/12 07:53:37 falk Exp falk $
  *
  * Gridbox.c - Gridbox composite widget
  *
@@ -27,6 +27,9 @@
  * determine how they are resized if the parent widget is resized.
  *
  * $Log: Gridbox.c,v $
+ * Revision 2.2  1999/12/12 07:53:37  falk
+ * minor cleanup in geometry management.
+ *
  * Revision 2.1	 1999/12/12 06:05:06  falk
  * Added "next" and "same" grid position values.
  * Fixed bugs related to malloc/free.
@@ -533,6 +536,8 @@ GridboxChangeManaged(w)
 	 * If parent grants; good.
 	 * If parent offers compromise, accept.
 	 * If parent refuses, live with it.
+	 * Now that we have our own size, try to grant child
+	 * request within those constraints.
 	 */
 
 static	XtGeometryResult
@@ -588,7 +593,7 @@ GridboxGeometryManager(w, request, reply)
     if( request->request_mode & (CWHeight|CWBorderWidth) )
       gc->gridbox.prefHeight = request->height + margin ;
 
-    /* recompute row & column sizes */
+    /* recompute minimum row & column sizes */
     /* TODO: can this be short-cutted to only compute the
      * affected rows & columns?
      */
@@ -614,10 +619,9 @@ GridboxGeometryManager(w, request, reply)
 #endif	/* COMMENT */
 
 
-    /* If my size changes at all, recompute all column & row sizes. */
+    /* Recompute all column & row sizes. */
 
-    if( result != XtGeometryNo )
-      layout(gb, myreply.width, myreply.height) ;
+    layout(gb, myreply.width, myreply.height) ;
 
 
     /* Now, compute the new size of the child within the constraints */
