@@ -1,5 +1,5 @@
 '\" t
-." $Id$
+." $Id: Gridbox.man,v 1.1 1998/08/07 00:21:50 falk Rel falk $
 ." view with "tbl | nroff -man"
 ."
 .TH "Gridbox" 3 "Aug 1998" "Version 1.0" ""
@@ -7,10 +7,9 @@
 Gridbox
 .SH DESCRIPTION
 The Gridbox widget manages one or more child widgets, arranging them in
-a horizontal grid of cells, aligned vertically and horizontally.  Rows
+a grid of cells, aligned vertically and horizontally.  Rows
 and columns may be different sizes, depending on the needs of the
 widgets they contain.
-
 .LP
 Child widgets may span any number of rows and/or columns of the grid,
 allowing highly flexible layout policies.
@@ -38,12 +37,13 @@ defaultDistance	Thickness	Dimension	4
 .ps +2
 
 .LP
-See the \fBCore\fP widget for more resources.
+See the \fBCore, Composite,\fP and \fBConstraint\fP
+widgets for more resources.
 
 .SS Descriptions.
 
 .TP
-.I defaultDistance
+.B defaultDistance
 Specifies the margins around child widgets.
 
 
@@ -74,27 +74,25 @@ margin	Margin	int	defaultDistance
 .SS Descriptions.
 
 .TP
-.I gridx, gridy
+.B gridx, gridy
 The widget's position in the grid.  Upper-left corner is 0,0
-
 .TP
-.I gridWidth, gridHeight
+.B gridWidth, gridHeight
 Widget size in cells.
-
 .TP
-.I Fill
+.B fill
 Determines how the widget is resized to fill its cell.  Value
-may be any of "width", "height", or "both".
-
+may be any of \fBnone\fP, \fBwidth\fP, \fBheight\fP, and \fBboth\fP.
 .TP
-.I Gravity
-Determines how the widget is positioned within its cell.  (This
-resource has no effect if the widget's Fill resource is "both".)
-Acceptable values are NorthWest, North, NorthEast, West, Center, East,
-SouthWest, South, and SouthEast,
-
+.B gravity
+Determines how the widget is positioned within its cell.
+Acceptable values are
+\fBNorthWest, North, NorthEast, West, Center, East, SouthWest, South,\fP
+and
+\fBSouthEast\fP.
+This resource has no effect if the widget's \fBfill\fP resource is "both".
 .TP
-.I weightx, weighty
+.B weightx, weighty
 Determines how the widget's cell is resized in response to Gridbox resize.
 When the gridbox is resized, any extra space is distributed to the
 rows and columns based on weight.
@@ -108,6 +106,34 @@ that row or column's weight.
 If all weights are zero, the rows and columns are not resized.
 
 
+.SH PROGRAMMING TIPS
+Every child of a Gridbox widget \fImust\fP be assigned \fBgridx\fP
+and \fBgridy\fP
+constraints, or they will all overlap each other in the upper-left corner
+of the Gridbox.
+.LP
+\fINote:\fP unless, of course, this is what you want.  If all Gridbox
+children are assigned the same cell, they will also be assigned the
+same dimensions.  You could then control their visibility by altering
+their stacking order.
+.LP
+A menu bar may be created in Athena through the use of a grid box:
+.IP 1
+Create a gridbox
+.IP 2
+Create a menuButton for each menu.  Set the \fBborderWidth\fP
+and \fBshadowWidth\fP
+of all menuButtons to zero.  Set \fBgridx\fP to the button's position
+in the menu bar.  Set \fBgridy\fP to zero.
+.IP 3
+The "Help" menuButton is given a \fBweightx\fP constraint of 1 so that its
+cell will fill the rest of the menu bar.  The \fBfill\fP constraint is set
+to \fBnone\fP so that the button is not resized.  The \fBgravity\fP constraint
+is set to \fBeast\fP so that the button is at the east end of the menu bar.
+.IP
+Alternatively, a blank label widget (or perhaps one containing a logo) is
+placed between the left buttons and the Help button, and allowed to fill
+the available space.
 
 
 
