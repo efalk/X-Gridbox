@@ -1,4 +1,4 @@
-/* $Id: Gridbox.c,v 1.1 1998/08/06 23:27:06 falk Exp falk $
+/* $Id: Gridbox.c,v 1.2 1998/08/07 03:07:24 falk Rel falk $
  *
  * Gridbox.c - Gridbox composite widget
  *
@@ -27,6 +27,9 @@
  * determine how they are resized if the parent widget is resized.
  *
  * $Log: Gridbox.c,v $
+ * Revision 1.2  1998/08/07 03:07:24  falk
+ * string => fill style converter slightly more robust
+ *
  * Revision 1.1  1998/08/06 23:27:06  falk
  * Initial revision
  *
@@ -43,7 +46,7 @@
 #define Offset(field) XtOffsetOf(GridboxRec, gridbox.field)
 static XtResource resources[] = {
     {XtNdefaultDistance, XtCThickness, XtRInt, sizeof(int),
-	Offset(defaultDistance), XtRImmediate, (XtPointer)4}
+	Offset(defaultDistance), XtRImmediate, (XtPointer)4},
 };
 #undef Offset
 
@@ -273,43 +276,48 @@ GridboxResize(w)
       computeWidHgtInfo(gb) ;
 
     /* find out how much excess there is */
-    wids =  XTCALLOC(gb->gridbox.nx, Dimension) ;
-    xs =  XTCALLOC(gb->gridbox.nx, Position) ;
-    memcpy(wids, gb->gridbox.max_wids, gb->gridbox.nx * sizeof(Dimension)) ;
-    excess = gb->core.width - gb->gridbox.total_wid ;
-    weight = gb->gridbox.total_weightx ;
-
-    /* distribute excess to the columns & assign positions */
-    for(x=0, i=0; i < gb->gridbox.nx; ++i)
+    if( gb->gridbox.nx > 0 )
     {
-      if( gb->gridbox.max_weightx[i] > 0 )
+      wids =  XTCALLOC(gb->gridbox.nx, Dimension) ;
+      xs =  XTCALLOC(gb->gridbox.nx, Position) ;
+      memcpy(wids, gb->gridbox.max_wids, gb->gridbox.nx * sizeof(Dimension)) ;
+      excess = gb->core.width - gb->gridbox.total_wid ;
+      weight = gb->gridbox.total_weightx ;
+
+      /* distribute excess to the columns & assign positions */
+      for(x=0, i=0; i < gb->gridbox.nx; ++i)
       {
-	j = wids[i] + gb->gridbox.max_weightx[i]*excess/weight ;
-	wids[i] = max(j,mincellsize) ;
+	if( gb->gridbox.max_weightx[i] > 0 )
+	{
+	  j = wids[i] + gb->gridbox.max_weightx[i]*excess/weight ;
+	  wids[i] = max(j,mincellsize) ;
+	}
+	xs[i] = x ;
+	x += wids[i] ;
       }
-      xs[i] = x ;
-      x += wids[i] ;
     }
 
-    /* Same again, for heights */
-    hgts = XTCALLOC(gb->gridbox.ny, Dimension) ;
-    ys = XTCALLOC(gb->gridbox.ny, Position) ;
-    memcpy(hgts, gb->gridbox.max_hgts, gb->gridbox.ny * sizeof(Dimension)) ;
-    excess = gb->core.height - gb->gridbox.total_hgt ;
-    weight = gb->gridbox.total_weighty ;
-
-    /* distribute it to the rows */
-    for(y=0, i=0; i < gb->gridbox.ny; ++i)
+    if( gb->gridbox.ny > 0 )
     {
-      if( gb->gridbox.max_weighty[i] > 0 )
-      {
-	j = hgts[i] + gb->gridbox.max_weighty[i]*excess/weight ;
-	hgts[i] = max(j,mincellsize) ;
-      }
-      ys[i] = y ;
-      y += hgts[i] ;
-    }
+      /* Same again, for heights */
+      hgts = XTCALLOC(gb->gridbox.ny, Dimension) ;
+      ys = XTCALLOC(gb->gridbox.ny, Position) ;
+      memcpy(hgts, gb->gridbox.max_hgts, gb->gridbox.ny * sizeof(Dimension)) ;
+      excess = gb->core.height - gb->gridbox.total_hgt ;
+      weight = gb->gridbox.total_weighty ;
 
+      /* distribute it to the rows */
+      for(y=0, i=0; i < gb->gridbox.ny; ++i)
+      {
+	if( gb->gridbox.max_weighty[i] > 0 )
+	{
+	  j = hgts[i] + gb->gridbox.max_weighty[i]*excess/weight ;
+	  hgts[i] = max(j,mincellsize) ;
+	}
+	ys[i] = y ;
+	y += hgts[i] ;
+      }
+    }
 
     /* Finally, loop through children, assign positions and sizes */
     /* Each child is assigned a size which is a function of its position
@@ -753,6 +761,9 @@ computeWidHgtInfo(gb)
     int		*weightx, *weighty ;
     int		maxgw=0, maxgh=0 ;	/* max size in cells */
     GridboxConstraints	gc ;
+
+    if( gb->composite.num_children <= 0 )
+      return ;
 
     freeAll(gb) ;		/* start with clean slate */
 
