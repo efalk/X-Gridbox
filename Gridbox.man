@@ -1,0 +1,120 @@
+'\" t
+." $Id$
+." view with "tbl | nroff -man"
+."
+.TH "Gridbox" 3 "Aug 1998" "Version 1.0" ""
+.SH NAME
+Gridbox
+.SH DESCRIPTION
+The Gridbox widget manages one or more child widgets, arranging them in
+a horizontal grid of cells, aligned vertically and horizontally.  Rows
+and columns may be different sizes, depending on the needs of the
+widgets they contain.
+
+.LP
+Child widgets may span any number of rows and/or columns of the grid,
+allowing highly flexible layout policies.
+Child widgets may have \fIweights\fP specified, which control
+how the child widgets are resized when the parent Gridbox is resized.
+
+.SH CLASS
+Compound => Constraint => Gridbox
+
+Gridbox does not require any specific widget set, and may be combined with
+any other widget set.
+
+.SH RESOURCES
+
+.ps -2
+.TS
+center box;
+cBsss
+lB|lB|lB|lB
+l|l|l|l.
+Gridbox
+Name	Class	Type	Default
+defaultDistance	Thickness	Dimension	4
+.TE
+.ps +2
+
+.LP
+See the \fBCore\fP widget for more resources.
+
+.SS Descriptions.
+
+.TP
+.I defaultDistance
+Specifies the margins around child widgets.
+
+
+.SH CONSTRAINT RESOURCES
+
+Constraint resources are set for the individual child widgets.
+
+.ps -2
+.TS
+center box;
+cBsss
+lB|lB|lB|lB
+l|l|l|l.
+Gridbox Constraints
+Name	Class	Type	Default
+gridx	Position	Position	0
+gridy	Position	Position	0
+gridWidth	Width	Dimension	1
+gridHeight	Height	Dimension	1
+fill	Fill	FillType	both
+gravity	Gravity	int	Center
+weightx	Weight	int	0
+weighty	Weight	int	0
+margin	Margin	int	defaultDistance
+.TE
+.ps +2
+
+.SS Descriptions.
+
+.TP
+.I gridx, gridy
+The widget's position in the grid.  Upper-left corner is 0,0
+
+.TP
+.I gridWidth, gridHeight
+Widget size in cells.
+
+.TP
+.I Fill
+Determines how the widget is resized to fill its cell.  Value
+may be any of "width", "height", or "both".
+
+.TP
+.I Gravity
+Determines how the widget is positioned within its cell.  (This
+resource has no effect if the widget's Fill resource is "both".)
+Acceptable values are NorthWest, North, NorthEast, West, Center, East,
+SouthWest, South, and SouthEast,
+
+.TP
+.I weightx, weighty
+Determines how the widget's cell is resized in response to Gridbox resize.
+When the gridbox is resized, any extra space is distributed to the
+rows and columns based on weight.
+.IP
+Each row and column in the grid has a weight which is the maximum
+weight of all the widgets in that row or column.  Whenever the Gridbox
+is larger than the size required to contain all of the child widgets,
+the excess space is distributed to each row or column in proportion to
+that row or column's weight.
+.IP
+If all weights are zero, the rows and columns are not resized.
+
+
+
+
+
+.SH AUTHOR
+Edward Falk <falk@falconer.vip.best.com>
+
+.SH COPYRIGHT
+Copyright 1998 by Edward A. Falk.  This widget may be used freely in any
+software.  Source code is freely distributable provided that my name
+is not removed from it.
