@@ -1,4 +1,4 @@
-/* $Id: Gridbox.h,v 1.1 1998/08/06 23:27:14 falk Rel falk $
+/* $Id: Gridbox.h,v 1.2 1999/02/21 00:30:24 falk Exp falk $
  *
  * This widget manages multiple child widgets, arranging them in a
  * rectangular grid.  Child widgets may occupy multiple grid cells.
@@ -47,8 +47,8 @@
  gridy		     Position		Position	0
  gridWidth	     Width		Dimension	1
  gridHeight	     Height		Dimension	1
- fill		     Fill		FillType	BOTH
- gravity	     Gravity		int		Center
+ fill		     Fill		FillType	FillBoth
+ gravity	     Gravity		Gravity		CenterGravity
  weightx	     Weight		int		0
  weighty	     Weight		int		0
  margin		     Margin		int		defaultDistance
@@ -59,7 +59,8 @@
   fill			"none", "width", "height" or "both"
   			(also: "fillnone", "fillwidth", "horizontal", "x",
 			"fillheight", "vertical", "y", "fillboth", "all", "xy")
-  gravity		position of child within cell when cell is larger
+  gravity		position of child within cell when cell is larger.
+  			See <X11/X.h> for list.
   weightx,weighty	effects how excess space is allocated to cells
   margin		margin around child within cell
 
