@@ -1,10 +1,17 @@
-/* $Id: GridboxP.h,v 1.1 1998/08/06 23:27:38 falk Rel falk $
+/* $Id: GridboxP.h,v 1.2 1999/07/01 16:33:33 falk Exp falk $
  *
  * GridboxP.h - Private definitions for Gridbox widget
  */
 
 #ifndef _GridboxP_h
 #define _GridboxP_h
+
+#include <X11/IntrinsicP.h>
+
+#ifdef	USE_MOTIF
+#include <Xm/XmP.h>
+#include <Xm/ManagerP.h>
+#endif
 
 #include "Gridbox.h"
 
@@ -17,6 +24,9 @@ typedef struct _GridboxClassRec {
     CoreClassPart	core_class;
     CompositeClassPart	composite_class;
     ConstraintClassPart	constraint_class;
+#ifdef	USE_MOTIF
+    XmManagerClassPart	manager_class;
+#endif
     GridboxClassPart	gridbox_class;
 } GridboxClassRec;
 
@@ -57,6 +67,9 @@ typedef struct _GridboxRec {
     CorePart		core;
     CompositePart	composite;
     ConstraintPart	constraint;
+#ifdef	USE_MOTIF
+    XmManagerPart	manager;
+#endif
     GridboxPart		gridbox;
 } GridboxRec;
 
@@ -80,6 +93,9 @@ typedef struct _GridboxConstraintsPart {
 } GridboxConstraintsPart;
 
 typedef struct _GridboxConstraintsRec {
+#ifdef	USE_MOTIF
+    XmManagerConstraintPart	manager;
+#endif
     GridboxConstraintsPart	gridbox;
 } GridboxConstraintsRec, *GridboxConstraints;
 
