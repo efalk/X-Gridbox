@@ -1,4 +1,4 @@
-/* $Id: Gridbox.h,v 1.3 1999/03/26 18:49:59 falk Exp falk $
+/* $Id: Gridbox.h,v 1.4 1999/12/12 06:07:17 falk Exp falk $
  *
  * This widget manages multiple child widgets, arranging them in a
  * rectangular grid.  Child widgets may occupy multiple grid cells.
@@ -52,6 +52,7 @@
  weightx	     Weight		int		0
  weighty	     Weight		int		0
  margin		     Margin		int		defaultDistance
+ allowResize	     AllowResize	Boolean		True
 
 
   gridx, gridy		position of child in grid.  Upper-left cell is 0,0
@@ -66,6 +67,7 @@
   			See <X11/X.h> for list.
   weightx,weighty	effects how excess space is allocated to cells
   margin		margin around child within cell
+  allowResize		child widget resize requests may be granted
 
 */
 
@@ -92,6 +94,11 @@
 #ifndef	XtNgravity
 #define	XtNgravity	"gravity"
 #define	XtCGravity	"Gravity"
+#endif
+
+#ifndef	XtNallowResize
+#define	XtNallowResize	"allowResize"
+#define	XtCAllowResize	"AllowResize"
 #endif
 
 
