@@ -1,0 +1,19 @@
+# $Id$
+
+CC = gcc
+
+CFLAGS = -O2 -I/usr/X11R6/include
+
+LIBS = -L/usr/X11R6/lib -lXaw -lXmu -lXt -lX11
+
+SRCS = gridboxdemo.c Gridbox.c
+OBJS = $(SRCS:.c=.o)
+
+all: gridboxdemo
+
+gridboxdemo: $(OBJS)
+	$(CC) -o $@ $(OBJS) $(LIBS)
+
+clean:
+	rm -f gridboxdemo
+	rm -f *.CKP *.BAK *.bak *.o core errs tags TAGS

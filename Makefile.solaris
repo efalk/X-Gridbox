@@ -1,0 +1,20 @@
+# $Id$
+
+CC = cc
+
+CFLAGS = -O -I/usr/openwin/include  -Dsun -Dsparc -DSVR4 -DSYSV
+
+LIBS = -L/usr/openwin/lib -lXaw -lXmu -lXt -lXext -lX11
+
+SRCS = gridboxdemo.c Gridbox.c
+OBJS = $(SRCS:.c=.o)
+
+all: gridboxdemo
+
+gridboxdemo: $(OBJS)
+	$(CC) -o $@ $(OBJS) $(LIBS)
+
+clean:
+	rm -f gridboxdemo
+	rm -f *.CKP *.BAK *.bak *.o core errs tags TAGS
+
