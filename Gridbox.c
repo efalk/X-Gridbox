@@ -1,4 +1,4 @@
-/* $Id: Gridbox.c,v 1.6 1999/07/17 19:54:14 falk Exp falk $
+/* $Id: Gridbox.c,v 1.7 1999/07/30 17:11:57 falk Exp falk $
  *
  * Gridbox.c - Gridbox composite widget
  *
@@ -27,6 +27,9 @@
  * determine how they are resized if the parent widget is resized.
  *
  * $Log: Gridbox.c,v $
+ * Revision 1.7  1999/07/30 17:11:57  falk
+ * now ignores unmanaged children
+ *
  * Revision 1.6  1999/07/17 19:54:14  falk
  * fixed bug where child doesn't accept a compromise but gridbox has already
  * resized itself.
@@ -186,9 +189,15 @@ static	Boolean	_CvtStringToFillType() ;
 #define	max(a,b)	((a)>(b)?(a):(b))
 #endif
 
+#ifndef	USE_MOTIF
+#define	SuperClass	(&constraintClassRec)
+#else
+#define	SuperClass	(&xmManagerClassRec)
+#endif
+
 GridboxClassRec	gridboxClassRec = {
   { /* core_class fields */
-    /* superclass         */    (WidgetClass) &constraintClassRec,
+    /* superclass         */    (WidgetClass) SuperClass,
     /* class_name         */    "Gridbox",
     /* widget_size        */    sizeof(GridboxRec),
     /* class_initialize   */    GridboxClassInit,
@@ -237,6 +246,18 @@ GridboxClassRec	gridboxClassRec = {
     /* set_values         */   GridboxConstraintSetValues,
     /* extension          */   NULL
   },
+#ifdef	USE_MOTIF
+/* Manager Class fields */
+  {
+    /* translations		*/	NULL,
+    /* syn_resources		*/	NULL,
+    /* num_syn_resources	*/	0,
+    /* syn_constraint_resources	*/	NULL,
+    /* num_syn_constraint_resources */	0,
+    /* parent_process		*/	XmInheritParentProcess,
+    /* extension		*/	NULL
+  },
+#endif
   { /* gridbox_class fields */
     /* extension	*/   NULL
   }
@@ -500,10 +521,10 @@ GridboxGeometryManager(w, request, reply)
     /* Position & border requests always denied */
     /* TODO: allow border requests. */
 
-    if( (request->request_mode & CWX) && request->x != w->core.x  ||
-        (request->request_mode & CWY) && request->y != w->core.y  ||
-        (request->request_mode & CWBorderWidth) &&
-			request->border_width != w->core.border_width )
+    if( ((request->request_mode & CWX) && request->x != w->core.x)  ||
+        ((request->request_mode & CWY) && request->y != w->core.y)  ||
+        ((request->request_mode & CWBorderWidth) &&
+			request->border_width != w->core.border_width) )
       return XtGeometryNo ;
 
 #ifdef	COMMENT
@@ -550,7 +571,7 @@ GridboxGeometryManager(w, request, reply)
 
 #ifdef	COMMENT
     if( changeGeometry(gb, new_width, new_height, queryOnly, &myreply)
-    		== XtGeometryAlmost && !queryOnly )
+		== XtGeometryAlmost && !queryOnly )
       (void) changeGeometry(gb, myreply.width, myreply.height, False, &myreply);
 #endif	/* COMMENT */
 
