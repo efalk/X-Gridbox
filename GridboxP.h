@@ -1,4 +1,4 @@
-/* $Id$
+/* $Id: GridboxP.h,v 1.1 1998/08/06 23:27:38 falk Rel falk $
  *
  * GridboxP.h - Private definitions for Gridbox widget
  */
@@ -22,13 +22,31 @@ typedef struct _GridboxClassRec {
 
 extern GridboxClassRec gridboxClassRec;
 
+
+/* Notes:
+ *  nx,ny are the dimensions of the grid, in cells
+ *  maxgw, maxgh are the sizes of the largest cells in the grid.
+ *
+ *  max_wids, max_hgts are the maximum preferred child widths for each
+ *	column and heights for each row, respectively.  This does
+ *	*not* mean that the rows & columns are actually this size.
+ *
+ * wids, hgts are the actual widths and heights of the columns and rows.
+ *
+ * total_wid, total_hgt are the sums of the max_wids, max_hgts arrays
+ * total_weightx, total_weighty are the sums of the maximum weights
+ *	of the child widgets.
+ */
+
 typedef struct _GridboxPart {
     /* resources */
     int		defaultDistance;	/* default distance between children */
 
     /* private state */
     int		nx, ny ;
+    Dimension	maxgw, maxgh ;
     Dimension	*max_wids, *max_hgts ;
+    Dimension	*wids, *hgts ;
     int		*max_weightx, *max_weighty ;
     Dimension	total_wid, total_hgt ;
     int		total_weightx, total_weighty ;
@@ -58,6 +76,7 @@ typedef struct _GridboxConstraintsPart {
  * Private contstraint resources.
  */
     Dimension	prefWidth, prefHeight ;	/* what the child wants to be	*/
+    Bool	queried ;
 } GridboxConstraintsPart;
 
 typedef struct _GridboxConstraintsRec {
