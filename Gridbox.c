@@ -1,4 +1,4 @@
-/* $Id: Gridbox.c,v 1.2 1998/08/07 03:07:24 falk Rel falk $
+/* $Id: Gridbox.c,v 1.3 1999/03/26 18:50:54 falk Exp falk $
  *
  * Gridbox.c - Gridbox composite widget
  *
@@ -27,6 +27,9 @@
  * determine how they are resized if the parent widget is resized.
  *
  * $Log: Gridbox.c,v $
+ * Revision 1.3  1999/03/26 18:50:54  falk
+ * Does not attempt to recompute anything if no children
+ *
  * Revision 1.2  1998/08/07 03:07:24  falk
  * string => fill style converter slightly more robust
  *
@@ -93,10 +96,10 @@ static	Boolean
 
 
 static	void	getPreferredSizes(GridboxWidget) ;
-static	void	computeCellSize(GridboxWidget, GridboxConstraints,
-			int *, int *, Dimension *, Dimension *) ;
+static	void	computeCellSize(GridboxWidget, GridboxConstraints, int *,int *);
 static	void	freeAll(GridboxWidget) ;
 static	void	computeWidHgtInfo(GridboxWidget) ;
+static	void	computeWidHgtMax(GridboxWidget) ;
 static	void	computeWidHgtUtil(int, int, int, int, Dimension *, int *) ;
 static	XtGeometryResult	changeGeometry(GridboxWidget, int, int,
 			int, XtWidgetGeometry *) ;
@@ -216,6 +219,8 @@ GridboxInit(request, new, args, num_args)
 
     gb->gridbox.nx = gb->gridbox.ny = 0 ;
     gb->gridbox.max_wids = gb->gridbox.max_hgts = NULL ;
+    gb->gridbox.wids = gb->gridbox.hgts = NULL ;
+    gb->gridbox.total_wid = gb->gridbox.total_hgt = 0 ;
     gb->gridbox.max_weightx = gb->gridbox.max_weighty = NULL ;
     gb->gridbox.needs_layout = True ;
     getPreferredSizes(gb) ;
@@ -275,48 +280,46 @@ GridboxResize(w)
     if( gb->gridbox.max_wids == NULL )
       computeWidHgtInfo(gb) ;
 
-    /* find out how much excess there is */
-    if( gb->gridbox.nx > 0 )
-    {
-      wids =  XTCALLOC(gb->gridbox.nx, Dimension) ;
-      xs =  XTCALLOC(gb->gridbox.nx, Position) ;
-      memcpy(wids, gb->gridbox.max_wids, gb->gridbox.nx * sizeof(Dimension)) ;
-      excess = gb->core.width - gb->gridbox.total_wid ;
-      weight = gb->gridbox.total_weightx ;
+    if( gb->gridbox.nx <= 0 || gb->gridbox.ny <= 0 )
+      return ;
 
-      /* distribute excess to the columns & assign positions */
-      for(x=0, i=0; i < gb->gridbox.nx; ++i)
+    /* find out how much excess there is */
+
+    wids =  gb->gridbox.wids ;
+    xs =  XTCALLOC(gb->gridbox.nx, Position) ;
+    memcpy(wids, gb->gridbox.max_wids, gb->gridbox.nx * sizeof(Dimension)) ;
+    excess = gb->core.width - gb->gridbox.total_wid ;
+    weight = gb->gridbox.total_weightx ;
+
+    /* distribute excess to the columns & assign positions */
+    for(x=0, i=0; i < gb->gridbox.nx; ++i)
+    {
+      if( gb->gridbox.max_weightx[i] > 0 )
       {
-	if( gb->gridbox.max_weightx[i] > 0 )
-	{
-	  j = wids[i] + gb->gridbox.max_weightx[i]*excess/weight ;
-	  wids[i] = max(j,mincellsize) ;
-	}
-	xs[i] = x ;
-	x += wids[i] ;
+	j = wids[i] + gb->gridbox.max_weightx[i]*excess/weight ;
+	wids[i] = max(j,mincellsize) ;
       }
+      xs[i] = x ;
+      x += wids[i] ;
     }
 
-    if( gb->gridbox.ny > 0 )
-    {
-      /* Same again, for heights */
-      hgts = XTCALLOC(gb->gridbox.ny, Dimension) ;
-      ys = XTCALLOC(gb->gridbox.ny, Position) ;
-      memcpy(hgts, gb->gridbox.max_hgts, gb->gridbox.ny * sizeof(Dimension)) ;
-      excess = gb->core.height - gb->gridbox.total_hgt ;
-      weight = gb->gridbox.total_weighty ;
+    /* Same again, for heights */
+    hgts = gb->gridbox.hgts ;
+    ys = XTCALLOC(gb->gridbox.ny, Position) ;
+    memcpy(hgts, gb->gridbox.max_hgts, gb->gridbox.ny * sizeof(Dimension)) ;
+    excess = gb->core.height - gb->gridbox.total_hgt ;
+    weight = gb->gridbox.total_weighty ;
 
-      /* distribute it to the rows */
-      for(y=0, i=0; i < gb->gridbox.ny; ++i)
+    /* distribute it to the rows */
+    for(y=0, i=0; i < gb->gridbox.ny; ++i)
+    {
+      if( gb->gridbox.max_weighty[i] > 0 )
       {
-	if( gb->gridbox.max_weighty[i] > 0 )
-	{
-	  j = hgts[i] + gb->gridbox.max_weighty[i]*excess/weight ;
-	  hgts[i] = max(j,mincellsize) ;
-	}
-	ys[i] = y ;
-	y += hgts[i] ;
+	j = hgts[i] + gb->gridbox.max_weighty[i]*excess/weight ;
+	hgts[i] = max(j,mincellsize) ;
       }
+      ys[i] = y ;
+      y += hgts[i] ;
     }
 
     /* Finally, loop through children, assign positions and sizes */
@@ -331,7 +334,7 @@ GridboxResize(w)
 
       margin = gc->gridbox.margin ;
 
-      computeCellSize(gb, gc, &width,&height, wids,hgts) ;
+      computeCellSize(gb, gc, &width,&height) ;
       x = xs[gc->gridbox.gridx] ;
       y = ys[gc->gridbox.gridy] ;
 
@@ -375,6 +378,8 @@ GridboxResize(w)
       	(*childP)->core.border_width );
     }
     gb->gridbox.needs_layout = False ;
+    XtFree((char *)xs) ;
+    XtFree((char *)ys) ;
 }
 
 
@@ -415,6 +420,8 @@ GridboxQueryGeometry( widget, request, reply  )
 
     /* determine how much space the rows & columns need */
 
+    /* TODO: do we need to do this?  Can we cache this info somehow? */
+
     if( gb->gridbox.max_wids == NULL )
       computeWidHgtInfo(gb) ;
 
@@ -424,6 +431,8 @@ GridboxQueryGeometry( widget, request, reply  )
 
     /* cheerfully accept anything >= our requested size, else offer
      * requested size as a compromise.
+     * TODO: policy question:  Should we always offer our preferred
+     * size as a compromise?
      */
 
     if( request->width == gb->core.width  &&
@@ -461,6 +470,7 @@ GridboxChangeManaged(w)
     if( changeGeometry(gb, width, height, False, &reply) == XtGeometryAlmost )
       (void) changeGeometry(gb, reply.width, reply.height, False, &reply) ;
 
+    /* always re-execute layout */
     XtClass(w)->core_class.resize((Widget)gb) ;
 }
 
@@ -485,6 +495,7 @@ GridboxGeometryManager(w, request, reply)
 {
     int			new_width, new_height ;
     int			old_width, old_height ;
+    int			old_cw, old_ch ;
     int			cell_width, cell_height ;
     GridboxWidget	gb = (GridboxWidget) XtParent(w);
     GridboxConstraints	gc = (GridboxConstraints) w->core.constraints;
@@ -493,6 +504,7 @@ GridboxGeometryManager(w, request, reply)
     int			margin ;
 
     /* Position & border requests always denied */
+    /* TODO: allow border requests. */
 
     if( (request->request_mode & CWX) && request->x != w->core.x  ||
         (request->request_mode & CWY) && request->y != w->core.y  ||
@@ -500,11 +512,15 @@ GridboxGeometryManager(w, request, reply)
 			request->border_width != w->core.border_width )
       return XtGeometryNo ;
 
-    /* First, remember how much space we needed before request */
+    /* First, remember how much space we wanted before request */
     old_width = gb->gridbox.total_wid ;
     old_height = gb->gridbox.total_hgt ;
+    /* And how much the child wanted */
+    old_cw = gc->gridbox.prefWidth ;
+    old_ch = gc->gridbox.prefHeight ;
 
-    computeCellSize(gb, gc, &cell_width, &cell_height, NULL,NULL) ;
+    /* Find the current size of this child's cell */
+    computeCellSize(gb, gc, &cell_width, &cell_height) ;
 
     /* set child's preferred size to the request value */
     margin = 2*w->core.border_width + 2*gc->gridbox.margin ;
@@ -514,7 +530,10 @@ GridboxGeometryManager(w, request, reply)
       gc->gridbox.prefHeight = request->height + margin ;
 
     /* recompute row & column sizes */
-    computeWidHgtInfo(gb) ;
+    /* TODO: can this be short-cutted to only compute the
+     * affected rows & columns?
+     */
+    computeWidHgtMax(gb) ;
     new_width = gb->gridbox.total_wid ;
     new_height = gb->gridbox.total_hgt ;
 
@@ -522,9 +541,14 @@ GridboxGeometryManager(w, request, reply)
     /* resize myself to accomodate request; accept any compromise */
     if( changeGeometry(gb, new_width, new_height, queryOnly, &myreply)
     		== XtGeometryAlmost && !queryOnly )
-      (void) changeGeometry(gb, myreply.width, myreply.height, queryOnly,
-      								&myreply) ;
+      (void) changeGeometry(gb, myreply.width, myreply.height, 0, &myreply) ;
 
+    if( queryOnly ) {
+      /* put things back the way they were */
+      gc->gridbox.prefWidth = old_cw ;
+      gc->gridbox.prefHeight = old_ch ;
+      computeWidHgtMax(gb) ;
+    }
 
     /* If my new size is >= what I need, then accept */
     /* If the current cell size is big enough, use that */
@@ -600,6 +624,8 @@ GridboxConstraintInit(request, new, args, num_args)
     if( gc->gridbox.margin < 0 )
         gc->gridbox.margin = gb->gridbox.defaultDistance;
 
+    gc->gridbox.queried = False ;
+
     /* TODO: how about resources that cause a child to use all
      * remaining space, or to start a new row?
      */
@@ -671,10 +697,13 @@ getPreferredSizes(gb)
 	{
 	  gc = (GridboxConstraints) (*childP)->core.constraints ;
 
-	  (void) XtQueryGeometry(*childP, NULL, &preferred) ;
-	  margin = (gc->gridbox.margin + preferred.border_width) * 2 ;
-	  gc->gridbox.prefWidth = preferred.width + margin ;
-	  gc->gridbox.prefHeight = preferred.height + margin ;
+	  if( !gc->gridbox.queried ) {
+	    (void) XtQueryGeometry(*childP, NULL, &preferred) ;
+	    margin = (gc->gridbox.margin + preferred.border_width) * 2 ;
+	    gc->gridbox.prefWidth = preferred.width + margin ;
+	    gc->gridbox.prefHeight = preferred.height + margin ;
+	    gc->gridbox.queried = True ;
+	  }
 	}
 }
 
@@ -684,28 +713,28 @@ getPreferredSizes(gb)
 	 */
 
 static	void
-computeCellSize(gb, gc, wr,hr, wids,hgts)
+computeCellSize(gb, gc, rwid,rhgt)
 	GridboxWidget	gb ;
 	GridboxConstraints gc ;
-	int		*wr, *hr ;
-	Dimension	*wids, *hgts ;
+	int		*rwid, *rhgt ;
 {
 	Position	x,y ;
-	Dimension	w,h ;
+	Dimension	wid,hgt ;
 	int		i ;
+	Dimension	*wids, *hgts ;
 
-	if( wids == NULL ) wids = gb->gridbox.max_wids ;
-	if( hgts == NULL ) hgts = gb->gridbox.max_hgts ;
+	wids = gb->gridbox.wids ;
+	hgts = gb->gridbox.hgts ;
 
 	x = gc->gridbox.gridx ;
 	y = gc->gridbox.gridy ;
-	for(w=0, i=0; i < gc->gridbox.gridWidth; ++i)
-	  w += wids[x+i] ;
-	for(h=0, i=0; i < gc->gridbox.gridHeight; ++i)
-	  h += hgts[y+i] ;
+	for(wid=0, i=0; i < gc->gridbox.gridWidth; ++i)
+	  wid += wids[x+i] ;
+	for(hgt=0, i=0; i < gc->gridbox.gridHeight; ++i)
+	  hgt += hgts[y+i] ;
 
-	*wr = w ;
-	*hr = h ;
+	*rwid = wid ;
+	*rhgt = hgt ;
 }
 
 
@@ -716,6 +745,8 @@ freeAll(gb)
 {
     XtFree((char *)gb->gridbox.max_wids) ; gb->gridbox.max_wids = NULL ;
     XtFree((char *)gb->gridbox.max_hgts) ; gb->gridbox.max_hgts = NULL ;
+    XtFree((char *)gb->gridbox.wids) ; gb->gridbox.wids = NULL ;
+    XtFree((char *)gb->gridbox.hgts) ; gb->gridbox.hgts = NULL ;
     XtFree((char *)gb->gridbox.max_weightx) ; gb->gridbox.max_weightx = NULL ;
     XtFree((char *)gb->gridbox.max_weighty) ; gb->gridbox.max_weighty = NULL ;
 }
@@ -723,31 +754,18 @@ freeAll(gb)
 
 
 
-	/* This function is the meat of the gridbox widget.  It performs
-	 * the following actions:
+	/* This function and the ones that follow are the meat
+	 * of the gridbox widget.  They perform the following actions:
 	 *
 	 * 1) loop through all children, finding their preferred
 	 *    sizes.  (This has already been done in getPreferredSizes.)
 	 *
 	 * 2) Determine how many rows & columns there are in the grid.
 	 *
-	 * 3) Compute desired sizes for all rows & columns:
-	 *   a) for all single-celled children, set the max desired
-	 *      size for the corresponding rows & columns.
-	 *   b) for all two-column children, set the max desired
-	 *      size for both of the corresponding columns
-	 *      by distributing the excess proportionally.
-	 *   c) repeat for two-row children.
-	 *   d) repeat for three-column, children
-	 *   e) repeat for three-row children.
-	 *   f) etc., until all children have been accounted for.
-	 *
-	 *   This is a non-deterministic algorithm, i.e. it is not
-	 *   guaranteed to find the optimum row & column sizes.
-	 *   I will have to give this some more thought.
+	 * 3) Compute desired sizes for all rows & columns.  See below.
 	 *
 	 * 4) Compute sums of row & column sizes.  This is our own
-	 *    preferred size.
+	 *    preferred size.  See below.
 	 */
 
 static	void
@@ -755,7 +773,7 @@ computeWidHgtInfo(gb)
     GridboxWidget	gb ;
 {
     Widget	*childP ;
-    int		i,j ;
+    int		i ;
     int		nc=0, nr=0 ;
     Dimension	*wids, *hgts ;
     int		*weightx, *weighty ;
@@ -770,9 +788,8 @@ computeWidHgtInfo(gb)
     /* step 2:  Find out how many rows & columns there will be.
      */
 
-    for( i=0, childP = gb->composite.children;
-	 i < gb->composite.num_children ;
-	 ++i, ++childP )
+    for( i = gb->composite.num_children, childP = gb->composite.children;
+	--i >= 0; ++childP)
     {
       gc = (GridboxConstraints) (*childP)->core.constraints ;
 
@@ -789,12 +806,71 @@ computeWidHgtInfo(gb)
 
     gb->gridbox.nx = nc ;
     gb->gridbox.ny = nr ;
+    gb->gridbox.maxgw = maxgw ;
+    gb->gridbox.maxgh = maxgh ;
 
     gb->gridbox.max_wids	= wids	  = XTCALLOC(nc, Dimension) ;
     gb->gridbox.max_hgts	= hgts	  = XTCALLOC(nr, Dimension) ;
+    gb->gridbox.wids		= XTCALLOC(nc, Dimension) ;
+    gb->gridbox.hgts		= XTCALLOC(nr, Dimension) ;
     gb->gridbox.max_weightx	= weightx = XTCALLOC(nc, int) ;
     gb->gridbox.max_weighty	= weighty = XTCALLOC(nr, int) ;
 
+
+    /* step 3 & 4, examine children for the size they need,
+     * compute row & column sizes accordingly.
+     */
+
+    computeWidHgtMax(gb) ;
+}
+
+
+
+
+	/*
+	 * Compute desired sizes for all rows & columns:
+	 *   a) for all single-celled children, set the max desired
+	 *      size for the corresponding rows & columns.
+	 *   b) for all two-column children, set the max desired
+	 *      size for both of the corresponding columns
+	 *      by distributing the excess proportionally.
+	 *   c) repeat for two-row children.
+	 *   d) repeat for three-column, children
+	 *   e) repeat for three-row children.
+	 *   f) etc., until all children have been accounted for.
+	 *
+	 *   This is a non-deterministic algorithm, i.e. it is not
+	 *   guaranteed to find the optimum row & column sizes.
+	 *   I will have to give this some more thought.
+	 *
+	 * Compute sums of row & column sizes.  This is our own
+	 *    preferred size.
+	 */
+
+static	void
+computeWidHgtMax(gb)
+    GridboxWidget	gb ;
+{
+    Widget	*childP ;
+    int		i,j ;
+    int		nc=0, nr=0 ;
+    Dimension	*wids, *hgts ;
+    int		*weightx, *weighty ;
+    int		maxgw=0, maxgh=0 ;	/* max size in cells */
+    GridboxConstraints	gc ;
+
+    if( gb->composite.num_children <= 0 )
+      return ;
+
+    nc = gb->gridbox.nx ;
+    nr = gb->gridbox.ny ;
+    maxgw = gb->gridbox.maxgw ;
+    maxgh = gb->gridbox.maxgh ;
+
+    wids = gb->gridbox.max_wids	;
+    hgts = gb->gridbox.max_hgts	;
+    weightx = gb->gridbox.max_weightx ;
+    weighty = gb->gridbox.max_weighty ;
 
     /* step 3, examine children for the size they need,
      * compute row & column sizes accordingly.
