@@ -1,4 +1,4 @@
-/* $Id$
+/* $Id: Gridbox.h,v 1.1 1998/08/06 23:27:14 falk Rel falk $
  *
  * This widget manages multiple child widgets, arranging them in a
  * rectangular grid.  Child widgets may occupy multiple grid cells.
@@ -32,21 +32,36 @@
  x		     Position		Position	0
  y		     Position		Position	0
 
+
+  defaultDistance	specifies the default margin around child widgets.
+
+  All other resources are the same as for Constraint.
+
 */
 
 /* Constraint parameters:
 
  Name		     Class		RepType		Default Value
  ----		     -----		-------		-------------
- gridx		     Position		Position	GRID_RELATIVE
- gridy		     Position		Position	GRID_RELATIVE
+ gridx		     Position		Position	0
+ gridy		     Position		Position	0
  gridWidth	     Width		Dimension	1
  gridHeight	     Height		Dimension	1
- fill		     Fill		FillType	NONE
+ fill		     Fill		FillType	BOTH
  gravity	     Gravity		int		Center
  weightx	     Weight		int		0
  weighty	     Weight		int		0
  margin		     Margin		int		defaultDistance
+
+
+  gridx, gridy		position of child in grid.  Upper-left cell is 0,0
+  gridWidth,gridHeight	size of child in cells.
+  fill			"none", "width", "height" or "both"
+  			(also: "fillnone", "fillwidth", "horizontal", "x",
+			"fillheight", "vertical", "y", "fillboth", "all", "xy")
+  gravity		position of child within cell when cell is larger
+  weightx,weighty	effects how excess space is allocated to cells
+  margin		margin around child within cell
 
 */
 
