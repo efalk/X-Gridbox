@@ -1,5 +1,5 @@
 '\" t
-." $Id: Gridbox.man,v 1.1 1998/08/07 00:21:50 falk Rel falk $
+." $Id: Gridbox.man,v 1.2 1999/03/06 17:00:19 falk Exp falk $
 ." view with "tbl | nroff -man"
 ."
 .TH "Gridbox" 3 "Aug 1998" "Version 1.0" ""
@@ -141,6 +141,17 @@ the available space.
 Edward Falk <falk@falconer.vip.best.com>
 
 .SH COPYRIGHT
-Copyright 1998 by Edward A. Falk.  This widget may be used freely in any
+Copyright 1999 by Edward A. Falk.  This widget may be used freely in any
 software.  Source code is freely distributable provided that my name
 is not removed from it.
+.P
+The X Consortium, and any party obtaining a copy of these files
+from the X Consortium, directly or indirectly, is granted, free of
+charge, a full and unrestricted irrevocable, world-wide, paid up,
+royalty-free, nonexclusive right and license to deal in this
+software and documentation files (the "Software"), including
+without limitation the rights to use, copy, modify, merge, publish,
+distribute, sublicense, and sell copies of the Software, and to
+permit persons who receive copies from any such party to do so.
+
+
