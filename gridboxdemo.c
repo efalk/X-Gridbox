@@ -1,4 +1,4 @@
-static	char	rcsid[] = "$Id: gridboxdemo.c,v 1.1 1998/08/06 23:28:17 falk Exp falk $" ;
+static	char	rcsid[] = "$Id: gridboxdemo.c,v 1.2 1998/12/16 19:55:06 falk Rel falk $" ;
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -12,7 +12,7 @@ static	char	rcsid[] = "$Id: gridboxdemo.c,v 1.1 1998/08/06 23:28:17 falk Exp fal
 #include <X11/Xaw/Box.h>
 #include <X11/Xaw/Label.h>
 #include <X11/Xaw/Command.h>
-#include <X11/Xaw/AsciiText.h>
+#include <X11/Xaw/Scrollbar.h>
 
 #include "Gridbox.h"
 
@@ -27,11 +27,65 @@ static	Atom	wm_delete_window ;
 static	XtAppContext	app_ctx ;
 
 static	Widget	topLevel ;
-static	Widget	gridbox ;
 
 static String fallback[] = {
 	"Gridboxdemo.baseTranslations: <Message>WM_PROTOCOLS: WMProtocols()",
+	"*mainGrid.defaultDistance: 0",
+	"*menuBar.?.borderWidth: 0",
+	"*menuBar.?.shadowWidth: 0",
+	"*menuBar.gridy: 0",
+	"*menuBar.fill: Width",
+	"*menuBar.weightx: 1",
+	"*m0.label: File",
+	"*m0.gridx: 0",
+	"*m1.label: Edit",
+	"*m1.gridx: 1",
+	"*m2.label: Help",
+	"*m2.gridx: 2",
+	"*m2.weightx: 1",
+	"*m2.fill: None",
+	"*m2.gravity: East",
+	"*toolBar.gridy: 1",
+	"*toolBar.fill: Width",
+	"*toolBar.weightx: 1",
+	"*t0.label: Rd",
+	"*t0.gridx: 0",
+	"*t1.label: Sv",
+	"*t1.gridx: 1",
+	"*t2.label: New",
+	"*t2.gridx: 2",
+	"*t3.label: <<",
+	"*t3.gridx: 3",
+	"*t4.label: X",
+	"*t4.gridx: 4",
+	"*t5.label: >>",
+	"*t5.gridx: 5",
+	"*scrollGrid.gridy: 2",
+	"*scrollGrid.fill: Both",
+	"*scrollGrid.weightx: 1",
+	"*scrollGrid.weighty: 1",
+	"*scrollGrid.defaultDistance: 0",
+	"*scrollGrid.?.borderWidth: 0",
+	"*s1.orientation: Vertical",
+	"*s1.gridx: 0",
+	"*s1.gridy: 0",
+	"*s1.fill: Both",
+	"*s1.weighty: 1",
+	"*s2.orientation: Horizontal",
+	"*s2.gridx: 1",
+	"*s2.gridy: 1",
+	"*s2.fill: Both",
+	"*s2.weightx: 1",
+	"*sl.gridx: 1",
+	"*sl.gridy: 0",
+	"*sl.fill: Both",
+	"*sl.weightx: 1",
+	"*sl.weighty: 1",
+	"*sl.bitmap: /usr/X11/include/X11/bitmaps/xlogo64",
 	"*gridbox.defaultDistance: 0",
+	"*gridbox.gridy: 3",
+	"*gridbox.fill: Width",
+	"*toolBar.weightx: 1",
 	"*b0.label: button 0",
 	"*b0.gridx: 0",
 	"*b0.gridy: 0",
@@ -146,10 +200,6 @@ main(int argc, char **argv)
 
 	XtAppAddActions(app_ctx, gridbox_actions, XtNumber(gridbox_actions));
 
-	gridbox = XtVaCreateManagedWidget("gridbox",
-		gridboxWidgetClass, topLevel,
-		0) ;
-
 	GridboxDemo() ;
 
 	XtRealizeWidget(topLevel) ;
@@ -170,27 +220,63 @@ main(int argc, char **argv)
 static	void
 GridboxDemo()
 {
-	(void) XtVaCreateManagedWidget("b0", commandWidgetClass, gridbox, 0) ;
-	(void) XtVaCreateManagedWidget("b1", commandWidgetClass, gridbox, 0) ;
-	(void) XtVaCreateManagedWidget("b2", commandWidgetClass, gridbox, 0) ;
-	(void) XtVaCreateManagedWidget("b3", commandWidgetClass, gridbox, 0) ;
-	(void) XtVaCreateManagedWidget("b4", commandWidgetClass, gridbox, 0) ;
-	(void) XtVaCreateManagedWidget("b5", commandWidgetClass, gridbox, 0) ;
-	(void) XtVaCreateManagedWidget("b6", commandWidgetClass, gridbox, 0) ;
-	(void) XtVaCreateManagedWidget("b7", commandWidgetClass, gridbox, 0) ;
-	(void) XtVaCreateManagedWidget("b8", commandWidgetClass, gridbox, 0) ;
-	(void) XtVaCreateManagedWidget("b9", commandWidgetClass, gridbox, 0) ;
-	(void) XtVaCreateManagedWidget("b10", commandWidgetClass, gridbox, 0) ;
-	(void) XtVaCreateManagedWidget("b11", commandWidgetClass, gridbox, 0) ;
-	(void) XtVaCreateManagedWidget("b12", commandWidgetClass, gridbox, 0) ;
-	(void) XtVaCreateManagedWidget("l1", labelWidgetClass, gridbox, 0) ;
-	(void) XtVaCreateManagedWidget("b15", commandWidgetClass, gridbox, 0) ;
-	(void) XtVaCreateManagedWidget("b16", commandWidgetClass, gridbox, 0) ;
-	(void) XtVaCreateManagedWidget("b19", commandWidgetClass, gridbox, 0) ;
-	(void) XtVaCreateManagedWidget("b20", commandWidgetClass, gridbox, 0) ;
-	(void) XtVaCreateManagedWidget("b21", commandWidgetClass, gridbox, 0) ;
-	(void) XtVaCreateManagedWidget("b22", commandWidgetClass, gridbox, 0) ;
-	(void) XtVaCreateManagedWidget("b23", commandWidgetClass, gridbox, 0) ;
+  Widget	mainGrid, menuBar, toolBar, scrollGrid, gridbox ;
+
+  mainGrid = XtCreateManagedWidget("mainGrid",
+	gridboxWidgetClass, topLevel, NULL, 0) ;
+
+  menuBar = XtCreateManagedWidget("menuBar",
+	gridboxWidgetClass, mainGrid, NULL, 0) ;
+
+  toolBar = XtCreateManagedWidget("toolBar",
+	gridboxWidgetClass, mainGrid, NULL, 0) ;
+
+  scrollGrid = XtCreateManagedWidget("scrollGrid",
+	gridboxWidgetClass, mainGrid, NULL, 0) ;
+
+  gridbox = XtCreateManagedWidget("gridbox",
+	gridboxWidgetClass, mainGrid, NULL, 0) ;
+
+  /* fill the menu bar */
+  (void) XtVaCreateManagedWidget("m0", commandWidgetClass, menuBar, 0) ;
+  (void) XtVaCreateManagedWidget("m1", commandWidgetClass, menuBar, 0) ;
+  (void) XtVaCreateManagedWidget("m2", commandWidgetClass, menuBar, 0) ;
+
+  /* fill the tool bar */
+  (void) XtVaCreateManagedWidget("t0", commandWidgetClass, toolBar, 0) ;
+  (void) XtVaCreateManagedWidget("t1", commandWidgetClass, toolBar, 0) ;
+  (void) XtVaCreateManagedWidget("t2", commandWidgetClass, toolBar, 0) ;
+  (void) XtVaCreateManagedWidget("t3", commandWidgetClass, toolBar, 0) ;
+  (void) XtVaCreateManagedWidget("t4", commandWidgetClass, toolBar, 0) ;
+  (void) XtVaCreateManagedWidget("t5", commandWidgetClass, toolBar, 0) ;
+
+  /* Fill the scroll window */
+  (void) XtVaCreateManagedWidget("s1", scrollbarWidgetClass, scrollGrid, 0) ;
+  (void) XtVaCreateManagedWidget("s2", scrollbarWidgetClass, scrollGrid, 0) ;
+  (void) XtVaCreateManagedWidget("sl", labelWidgetClass, scrollGrid, 0) ;
+
+  /* fill the grid box */
+  (void) XtVaCreateManagedWidget("b0", commandWidgetClass, gridbox, 0) ;
+  (void) XtVaCreateManagedWidget("b1", commandWidgetClass, gridbox, 0) ;
+  (void) XtVaCreateManagedWidget("b2", commandWidgetClass, gridbox, 0) ;
+  (void) XtVaCreateManagedWidget("b3", commandWidgetClass, gridbox, 0) ;
+  (void) XtVaCreateManagedWidget("b4", commandWidgetClass, gridbox, 0) ;
+  (void) XtVaCreateManagedWidget("b5", commandWidgetClass, gridbox, 0) ;
+  (void) XtVaCreateManagedWidget("b6", commandWidgetClass, gridbox, 0) ;
+  (void) XtVaCreateManagedWidget("b7", commandWidgetClass, gridbox, 0) ;
+  (void) XtVaCreateManagedWidget("b8", commandWidgetClass, gridbox, 0) ;
+  (void) XtVaCreateManagedWidget("b9", commandWidgetClass, gridbox, 0) ;
+  (void) XtVaCreateManagedWidget("b10", commandWidgetClass, gridbox, 0) ;
+  (void) XtVaCreateManagedWidget("b11", commandWidgetClass, gridbox, 0) ;
+  (void) XtVaCreateManagedWidget("b12", commandWidgetClass, gridbox, 0) ;
+  (void) XtVaCreateManagedWidget("l1", labelWidgetClass, gridbox, 0) ;
+  (void) XtVaCreateManagedWidget("b15", commandWidgetClass, gridbox, 0) ;
+  (void) XtVaCreateManagedWidget("b16", commandWidgetClass, gridbox, 0) ;
+  (void) XtVaCreateManagedWidget("b19", commandWidgetClass, gridbox, 0) ;
+  (void) XtVaCreateManagedWidget("b20", commandWidgetClass, gridbox, 0) ;
+  (void) XtVaCreateManagedWidget("b21", commandWidgetClass, gridbox, 0) ;
+  (void) XtVaCreateManagedWidget("b22", commandWidgetClass, gridbox, 0) ;
+  (void) XtVaCreateManagedWidget("b23", commandWidgetClass, gridbox, 0) ;
 }
 
 
