@@ -1,4 +1,4 @@
-/* $Id: GridboxP.h,v 1.2 1999/07/01 16:33:33 falk Exp falk $
+/* $Id: GridboxP.h,v 2.0 1999/10/19 21:50:50 falk Exp falk $
  *
  * GridboxP.h - Private definitions for Gridbox widget
  */
@@ -89,7 +89,6 @@ typedef struct _GridboxConstraintsPart {
  * Private contstraint resources.
  */
     Dimension	prefWidth, prefHeight ;	/* what the child wants to be	*/
-    Bool	queried ;
 } GridboxConstraintsPart;
 
 typedef struct _GridboxConstraintsRec {
