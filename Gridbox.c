@@ -1,4 +1,4 @@
-/* $Id: Gridbox.c,v 2.2 1999/12/12 07:53:37 falk Exp falk $
+/* $Id: Gridbox.c,v 2.3 2000/01/29 22:02:03 falk Exp falk $
  *
  * Gridbox.c - Gridbox composite widget
  *
@@ -27,6 +27,9 @@
  * determine how they are resized if the parent widget is resized.
  *
  * $Log: Gridbox.c,v $
+ * Revision 2.3  2000/01/29 22:02:03  falk
+ * Now recomputes child sizes always.
+ *
  * Revision 2.2  1999/12/12 07:53:37  falk
  * minor cleanup in geometry management.
  *
@@ -134,6 +137,8 @@ static XtResource gridboxConstraintResources[] = {
 	Offset(weighty), XtRImmediate, (XtPointer)0},
     {XtNmargin, XtCMargin, XtRInt, sizeof(int),
 	Offset(margin), XtRImmediate, (XtPointer)DEFAULT_MARGIN},
+    {XtNallowResize, XtCAllowResize, XtRBoolean, sizeof(Boolean),
+	Offset(allowResize), XtRImmediate, (XtPointer)True},
 };
 #undef Offset
 
@@ -468,6 +473,9 @@ GridboxDestroy(w)
 }
 
 
+
+	/* Called when parent wants to know our preferred size */
+
 static	XtGeometryResult
 GridboxQueryGeometry( widget, request, reply  )
     Widget widget;
@@ -533,11 +541,18 @@ GridboxChangeManaged(w)
 	 * Recompute row/column sizes based on child request
 	 * and request to change my own size accordingly.
 	 *
+	 * If allowResize is False, only grant child resize requests
+	 * if they don't exceed current cell size.
+	 *
 	 * If parent grants; good.
 	 * If parent offers compromise, accept.
 	 * If parent refuses, live with it.
 	 * Now that we have our own size, try to grant child
 	 * request within those constraints.
+	 *
+	 * RULE:  If we offer the child a compromise; it must be
+	 * a compromise we'll accept on the next call.  Lesstif will
+	 * squawk if we don't do this.
 	 */
 
 static	XtGeometryResult
@@ -562,10 +577,20 @@ GridboxGeometryManager(w, request, reply)
     /* TODO: allow border requests. */
 
     if( ((request->request_mode & CWX) && request->x != w->core.x)  ||
-	((request->request_mode & CWY) && request->y != w->core.y)  ||
+	((request->request_mode & CWY) && request->y != w->core.y) )
+#ifdef	COMMENT
 	((request->request_mode & CWBorderWidth) &&
 			  request->border_width != w->core.border_width) )
+#endif	/* COMMENT */
       return XtGeometryNo ;
+
+    /* Make all three fields in the request valid */
+    if( !(request->request_mode & CWWidth) )
+	request->width = w->core.width;
+    if( !(request->request_mode & CWHeight) )
+	request->height = w->core.height;
+    if( !(request->request_mode & CWBorderWidth) )
+	request->border_width = w->core.border_width;
 
 #ifdef	COMMENT
     /* First, remember how much space we wanted before request */
@@ -587,79 +612,100 @@ GridboxGeometryManager(w, request, reply)
 
 
     /* set child's preferred size to the request value */
-    margin = 2*w->core.border_width + 2*gc->gridbox.margin ;
-    if( request->request_mode & (CWWidth|CWBorderWidth) )
-      gc->gridbox.prefWidth = request->width + margin ;
-    if( request->request_mode & (CWHeight|CWBorderWidth) )
-      gc->gridbox.prefHeight = request->height + margin ;
+    margin = 2*request->border_width + 2*gc->gridbox.margin ;
+    gc->gridbox.prefWidth = request->width + margin ;
+    gc->gridbox.prefHeight = request->height + margin ;
 
-    /* recompute minimum row & column sizes */
-    /* TODO: can this be short-cutted to only compute the
-     * affected rows & columns?
-     */
-    if( gb->gridbox.needs_layout )
-      computeWidHgtInfo(gb) ;
-    else
-      computeWidHgtMax(gb) ;
-    new_width = gb->gridbox.total_wid ;
-    new_height = gb->gridbox.total_hgt ;
-
-
-
-    /* resize myself to accomodate request; make this a query to start;
-     * the child may not want the compromise I offer.
-     */
-
-    result = changeGeometry(gb, new_width, new_height, True, &myreply) ;
-
-#ifdef	COMMENT
-    if( changeGeometry(gb, new_width, new_height, queryOnly, &myreply)
-		== XtGeometryAlmost && !queryOnly )
-      (void) changeGeometry(gb, myreply.width, myreply.height, False, &myreply);
-#endif	/* COMMENT */
-
-
-    /* Recompute all column & row sizes. */
-
-    layout(gb, myreply.width, myreply.height) ;
-
-
-    /* Now, compute the new size of the child within the constraints */
-
-    layoutChild(gb, w, &cell_width, &cell_height, &x,&y) ;
-
-
-
-    if( queryOnly )
+    if( gc->gridbox.allowResize )
     {
-      /* put things back the way they were */
-      gc->gridbox.prefWidth = old_cw ;
-      gc->gridbox.prefHeight = old_ch ;
-      computeWidHgtMax(gb) ;
-      if( result != XtGeometryNo )
-	layout(gb, old_width, old_height) ;
-    }
-
-
-    /* can't change */
-    if( cell_width == w->core.width && cell_height == w->core.height )
-      return XtGeometryNo ;
-
-    /* request granted */
-    if( cell_width == request->width && cell_height == request->height )
-    {
-      if( !queryOnly ) {
-	(void) changeGeometry(gb, myreply.width, myreply.height, False, NULL);
-	/* TODO: necessary? */
-	XtClass((Widget)gb)->core_class.resize((Widget)gb) ;
-	return XtGeometryDone ;
-      }
+      /* recompute minimum row & column sizes */
+      /* TODO: can this be short-cutted to only compute the
+       * affected rows & columns?
+       */
+      if( gb->gridbox.needs_layout )
+	computeWidHgtInfo(gb) ;
       else
-	return XtGeometryYes ;
+	computeWidHgtMax(gb) ;
+      new_width = gb->gridbox.total_wid ;
+      new_height = gb->gridbox.total_hgt ;
+
+
+
+      /* resize myself to accomodate request; make this a query to start;
+       * the child may not want the compromise I offer.
+       */
+
+      result = changeGeometry(gb, new_width, new_height, True, &myreply) ;
+
+
+      /* Recompute all column & row sizes. */
+
+      layout(gb, myreply.width, myreply.height) ;
+
+
+      /* Now, compute the new size of the child within the constraints */
+
+      layoutChild(gb, w, &cell_width, &cell_height, &x,&y) ;
+
+
+
+      if( queryOnly )
+      {
+	/* put things back the way they were */
+	gc->gridbox.prefWidth = old_cw ;
+	gc->gridbox.prefHeight = old_ch ;
+	computeWidHgtMax(gb) ;
+	if( result != XtGeometryNo )
+	  layout(gb, old_width, old_height) ;
+      }
+
+
+      /* can't change */
+      if( cell_width == w->core.width && cell_height == w->core.height )
+	return XtGeometryNo ;
+
+      /* request granted */
+      if( cell_width == request->width && cell_height == request->height )
+      {
+	if( !queryOnly ) {
+	  (void) changeGeometry(gb, myreply.width, myreply.height, False, NULL);
+	  /* TODO: necessary? */
+	  XtClass((Widget)gb)->core_class.resize((Widget)gb) ;
+	  return XtGeometryDone ;
+	}
+	else
+	  return XtGeometryYes ;
+      }
     }
 
-    reply->width = cell_width ;
-    reply->height = cell_height ;
+    else {
+      /* Cell resize not allowed, but maybe the new request will fit within
+       * the current cell size
+       */
+      computeCellSize(gb, gc, &cell_width, &cell_height) ;
+
+      if( queryOnly )
+      {
+	/* put things back the way they were */
+	gc->gridbox.prefWidth = old_cw ;
+	gc->gridbox.prefHeight = old_ch ;
+      }
+
+      if( cell_width >= gc->gridbox.prefWidth &&
+	  cell_height >= gc->gridbox.prefHeight )
+      {
+	if( !queryOnly ) {
+	  (void) changeGeometry(gb, myreply.width, myreply.height, False, NULL);
+	  XtClass((Widget)gb)->core_class.resize((Widget)gb) ;
+	  return XtGeometryDone ;
+	}
+	else
+	  return XtGeometryYes ;
+      }
+    }
+
+    reply->width = cell_width - margin ;
+    reply->height = cell_height - margin ;
     reply->request_mode = CWWidth | CWHeight ;
     return XtGeometryAlmost ;
 }
@@ -762,7 +808,13 @@ getPreferredSizes(gb)
 	  {
 	    gc = (GridboxConstraints) (*childP)->core.constraints ;
 
-	    (void) XtQueryGeometry(*childP, NULL, &preferred) ;
+	    if( gc->gridbox.allowResize )
+	      (void) XtQueryGeometry(*childP, NULL, &preferred) ;
+	    else {
+	      preferred.width = (*childP)->core.width ;
+	      preferred.height = (*childP)->core.height ;
+	      preferred.border_width = (*childP)->core.border_width ;
+	    }
 	    margin = (gc->gridbox.margin + preferred.border_width) * 2 ;
 	    gc->gridbox.prefWidth = preferred.width + margin ;
 	    gc->gridbox.prefHeight = preferred.height + margin ;
@@ -786,7 +838,7 @@ getPreferredSizes(gb)
 }
 
 
-	/* Given a gridbox & child constraints, compute the size of
+	/* Given a gridbox & child, compute the current size of
 	 * the cell occupied by the child.
 	 */
 
@@ -966,7 +1018,7 @@ computeWidHgtMax(gb)
      * partially overlap.
      */
 
-    /* column widths */
+    /* Column widths */
     memset(wids, 0, nc * sizeof(Dimension)) ;
     for(j=1; j<=maxgw; ++j)
     {
@@ -1031,13 +1083,26 @@ computeWidHgtUtil(idx, ncell, wid, weight, wids, weights)
      * 2 find out if the available space in the indicated column(s)
      *	 is enough to satisfy this widget.  If not, distribute the
      *	 excess size by column weights.
+     *
+     *   The excess may not divide evenly into the number of cells.
+     *   The remainder will also be distributed evenly to some of the
+     *   cells.  Make a Bresenham walk to do this.
      */
 
     int		i, cwid = 0 ;
     int		wtot = 0 ;		/* total weight of cells */
     int		excess ;
+    int		rem, count ;		/* bresenham */
 
-    for(i=0; i<ncell; ++i)
+    if( ncell == 1 )		/* simple case */
+    {
+      if( weights[idx] < weight ) weights[idx] = weight ;
+      if( wids[idx] < wid ) wids[idx] = wid ;
+      return ;
+    }
+
+
+    for(i=0; i<ncell; ++i)	/* multi-cell cases */
     {
       assert(idx+i >= 0) ;
       if( weights[idx+i] < weight )
@@ -1046,16 +1111,40 @@ computeWidHgtUtil(idx, ncell, wid, weight, wids, weights)
       wtot += weights[idx+i] ;
     }
 
-    if( cwid < wid )
+    if( cwid < wid )		/* need to increase cell size(s) */
     {
-      excess = wid - cwid    + ncell-1 ;	/* round up */
-      for(i=0; i<ncell; ++i)
+      excess = wid - cwid ;
+      if( ncell == 1 )		/* one cell: assign excess to the cell */
+	wids[idx] = wid ;
+
+      else if( wtot == 0 )	/* weights all zero, distribute evenly */
       {
-	assert(idx+i >= 0) ;
-	if( wtot == 0 )
-	  wids[idx+i] += excess/ncell ;
-	else
+	rem = excess % ncell ;
+	count = (ncell-rem)/2 ;
+	excess /= ncell ;
+	for(i=0; i<ncell; ++i)
+	{
+	  wids[idx+i] += excess ;
+	  if( (count -= rem) < 0 ) {
+	    ++wids[idx+i] ;
+	    count += ncell ;
+	  }
+	}
+      }
+
+      else			/* weighted */
+      {
+	rem = (excess*wtot) % ncell ;
+	count = (ncell-rem)/2 ;
+	for(i=0; i<ncell; ++i)
+	{
+	  assert(idx+i >= 0) ;
 	  wids[idx+i] += excess*weights[idx+i]/wtot ;
+	  if( (count -= rem) < 0 ) {
+	    ++wids[idx+i] ;
+	    count += ncell ;
+	  }
+	}
       }
     }
 }
@@ -1113,6 +1202,10 @@ layout(gb, width, height)
 }
 
 
+
+	/* Given a gridbox & child, compute the size and placement of
+	 * the child within the cell.
+	 */
 
 static	void
 layoutChild(gb, w, rwid,rhgt, rx,ry)
