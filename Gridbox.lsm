@@ -1,8 +1,8 @@
 
 Begin3
 Title:		Gridbox - gridbox widget for X
-Version:	1.0
-Entered-date:	26 Mar 1999
+Version:	1.2
+Entered-date:	22 July 1999
 Description:	Constraint widget.
 		Display multiple child widgets in rows and columns.
 		Sizes of rows and columns vary according to the needs
