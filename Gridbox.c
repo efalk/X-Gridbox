@@ -1,4 +1,4 @@
-/* $Id: Gridbox.c,v 1.7 1999/07/30 17:11:57 falk Exp falk $
+/* $Id: Gridbox.c,v 2.0 1999/10/19 21:48:34 falk Exp falk $
  *
  * Gridbox.c - Gridbox composite widget
  *
@@ -27,6 +27,9 @@
  * determine how they are resized if the parent widget is resized.
  *
  * $Log: Gridbox.c,v $
+ * Revision 2.0  1999/10/19 21:48:34  falk
+ * Motif compatibility
+ *
  * Revision 1.7  1999/07/30 17:11:57  falk
  * now ignores unmanaged children
  *
@@ -80,12 +83,15 @@
  *
  * getPreferredSizes()	obtains preferred sizes from child widgets.
  * computeWidHgtInfo()	based on preferred sizes, find row/column sizes
+ * computeWidHgtMax()	based on preferred sizes, find max sizes
  * GridboxResize()	given Gridbox size, lay out the child widgets.
  * layout()		given size, assign sizes of rows & columns
  * layoutChild()	assign size of one child widget
  * changeGeometry()	attempt to change size, negotiate with parent
  *
  */
+
+#include <stdio.h>
 
 #include <X11/IntrinsicP.h>
 #include <X11/StringDefs.h>
@@ -104,9 +110,9 @@ static XtResource resources[] = {
 
 #define Offset(field) XtOffsetOf(GridboxConstraintsRec, gridbox.field)
 static XtResource gridboxConstraintResources[] = {
-    {XtNgridx, XtCPosition, XtRPosition, sizeof(Position),
+    {XtNgridx, XtCPosition, XtRGridPosition, sizeof(Position),
 	Offset(gridx), XtRImmediate, (XtPointer)0},
-    {XtNgridy, XtCPosition, XtRPosition, sizeof(Position),
+    {XtNgridy, XtCPosition, XtRGridPosition, sizeof(Position),
 	Offset(gridy), XtRImmediate, (XtPointer)0},
     {XtNgridWidth, XtCWidth, XtRDimension, sizeof(Dimension),
 	Offset(gridWidth), XtRImmediate, (XtPointer)1},
@@ -147,6 +153,7 @@ static	Boolean
 static	void	getPreferredSizes(GridboxWidget) ;
 static	void	computeCellSize(GridboxWidget, GridboxConstraints,
 			Dimension *,Dimension *);
+static	void	allocAll(GridboxWidget) ;
 static	void	freeAll(GridboxWidget) ;
 static	void	computeWidHgtInfo(GridboxWidget) ;
 static	void	computeWidHgtMax(GridboxWidget) ;
@@ -155,9 +162,11 @@ static	void	layout(GridboxWidget, int, int) ;
 static	void	layoutChild(GridboxWidget, Widget, Dimension *, Dimension *,
 			Position *, Position *) ;
 static	XtGeometryResult
-		changeGeometry(GridboxWidget, int, int, int, XtWidgetGeometry *) ;
+	      changeGeometry(GridboxWidget, int, int, int, XtWidgetGeometry *) ;
 
 static	Boolean	_CvtStringToFillType(Display *, XrmValuePtr, Cardinal *,
+			XrmValuePtr, XrmValuePtr, XtPointer *) ;
+static	Boolean	_CvtStringToGridPosition(Display *, XrmValuePtr, Cardinal *,
 			XrmValuePtr, XrmValuePtr, XtPointer *) ;
 #else
 static	void	GridboxClassInit() ;
@@ -180,6 +189,7 @@ static	XtGeometryResult	GridboxQueryGeometry() ;
 static	XtGeometryResult	GridboxGeometryManager() ;
 static	XtGeometryResult	changeGeometry() ;
 static	Boolean	_CvtStringToFillType() ;
+static	Boolean	_CvtStringToGridPosition() ;
 #endif
 
 #define	XTCALLOC(n,type)	((type *) XtCalloc((n), sizeof(type)))
@@ -188,6 +198,22 @@ static	Boolean	_CvtStringToFillType() ;
 #define	min(a,b)	((a)<(b)?(a):(b))
 #define	max(a,b)	((a)>(b)?(a):(b))
 #endif
+
+
+#ifdef	DEBUG
+#define	assert(e)	do { if( !(e) ) assfail(#e,__LINE__);} while(0)
+static	void
+assfail(char *e, int line)
+{
+  fprintf(stderr, "yak! assertion failed: %s, %s line %d\n",
+    e, __FILE__, line) ;
+}
+#else
+#define	assert(e)
+#endif
+
+
+
 
 #ifndef	USE_MOTIF
 #define	SuperClass	(&constraintClassRec)
@@ -277,6 +303,8 @@ GridboxClassInit()
 {
     XtAddConverter( XtRString, XtRGravity, XmuCvtStringToGravity, NULL, 0) ;
     XtSetTypeConverter( XtRString, XtRFillType, _CvtStringToFillType,
+	NULL, 0, XtCacheNone, (XtDestructor)NULL);
+    XtSetTypeConverter( XtRString, XtRGridPosition, _CvtStringToGridPosition,
 	NULL, 0, XtCacheNone, (XtDestructor)NULL);
 }
 
@@ -443,8 +471,10 @@ GridboxQueryGeometry( widget, request, reply  )
 
     /* determine how much space the rows & columns need */
 
-    if( gb->gridbox.max_wids == NULL )
+    if( gb->gridbox.max_wids == NULL ) {
+      getPreferredSizes(gb) ;
       computeWidHgtInfo(gb) ;
+    }
 
     reply->request_mode = CWWidth | CWHeight;
     reply->width = gb->gridbox.total_wid;
@@ -452,8 +482,10 @@ GridboxQueryGeometry( widget, request, reply  )
 
     /* We always offer our preferred size as a compromise.  */
 
-    if( request->width == gb->core.width  &&
-	request->height == gb->core.height )
+    if( (request->request_mode & CWWidth) &&
+    		request->width == gb->core.width  &&
+	(request->request_mode & CWHeight) &&
+		request->height == gb->core.height )
       return XtGeometryNo;
 
     return XtGeometryAlmost;
@@ -557,7 +589,10 @@ GridboxGeometryManager(w, request, reply)
     /* TODO: can this be short-cutted to only compute the
      * affected rows & columns?
      */
-    computeWidHgtMax(gb) ;
+    if( gb->gridbox.needs_layout )
+      computeWidHgtInfo(gb) ;
+    else
+      computeWidHgtMax(gb) ;
     new_width = gb->gridbox.total_wid ;
     new_height = gb->gridbox.total_hgt ;
 
@@ -676,6 +711,7 @@ GridboxConstraintSetValues(current, request, new, args, num_args)
       gcCur->gridbox.gridHeight	!= gcNew->gridbox.gridHeight )
   {
       freeAll(gb) ;
+      getPreferredSizes(gb) ;
       gb->gridbox.needs_layout = True ;
   }
 
@@ -687,6 +723,11 @@ GridboxConstraintSetValues(current, request, new, args, num_args)
   {
       gb->gridbox.needs_layout = True ;
   }
+
+#ifdef	COMMENT
+  if( gb->gridbox.needs_layout )
+    GridboxChangeManaged((Widget)gb) ;
+#endif	/* COMMENT */
 
   return False ;		/* what does this signify? */
 }
@@ -709,9 +750,9 @@ getPreferredSizes(gb)
 	GridboxWidget	gb ;
 {
 	int	i ;
-	Widget	*childP;
+	Widget	*childP ;
 	int	margin ;
-	GridboxConstraints gc ;
+	GridboxConstraints gc, prevc=NULL ;
 	XtWidgetGeometry	preferred ;
 
 	for( i=0, childP = gb->composite.children;
@@ -721,13 +762,27 @@ getPreferredSizes(gb)
 	  {
 	    gc = (GridboxConstraints) (*childP)->core.constraints ;
 
-	    if( !gc->gridbox.queried ) {
-	      (void) XtQueryGeometry(*childP, NULL, &preferred) ;
-	      margin = (gc->gridbox.margin + preferred.border_width) * 2 ;
-	      gc->gridbox.prefWidth = preferred.width + margin ;
-	      gc->gridbox.prefHeight = preferred.height + margin ;
-	      gc->gridbox.queried = True ;
-	    }
+	    (void) XtQueryGeometry(*childP, NULL, &preferred) ;
+	    margin = (gc->gridbox.margin + preferred.border_width) * 2 ;
+	    gc->gridbox.prefWidth = preferred.width + margin ;
+	    gc->gridbox.prefHeight = preferred.height + margin ;
+	    gc->gridbox.queried = True ;
+
+	    if( gc->gridbox.gridx == GRIDBOX_NEXT )
+	      gc->gridbox.gridx = prevc == NULL ? 0 :
+		      prevc->gridbox.gridx + prevc->gridbox.gridWidth ;
+
+	    else if( gc->gridbox.gridx == GRIDBOX_SAME )
+	      gc->gridbox.gridx = prevc == NULL ? 0 : prevc->gridbox.gridx ;
+
+	    if( gc->gridbox.gridy == GRIDBOX_NEXT )
+	      gc->gridbox.gridy = prevc == NULL ? 0 :
+		      prevc->gridbox.gridy + prevc->gridbox.gridHeight ;
+
+	    else if( gc->gridbox.gridy == GRIDBOX_SAME )
+	      gc->gridbox.gridy = prevc == NULL ? 0 : prevc->gridbox.gridy ;
+
+	    prevc = gc ;
 	  }
 }
 
@@ -764,15 +819,27 @@ computeCellSize(gb, gc, rwid,rhgt)
 
 
 static	void
+allocAll(gb)
+    GridboxWidget	gb ;
+{
+    gb->gridbox.max_wids	= XTCALLOC(gb->gridbox.nx, Dimension) ;
+    gb->gridbox.max_hgts	= XTCALLOC(gb->gridbox.ny, Dimension) ;
+    gb->gridbox.wids		= XTCALLOC(gb->gridbox.nx, Dimension) ;
+    gb->gridbox.hgts		= XTCALLOC(gb->gridbox.ny, Dimension) ;
+    gb->gridbox.max_weightx	= XTCALLOC(gb->gridbox.nx, int) ;
+    gb->gridbox.max_weighty	= XTCALLOC(gb->gridbox.ny, int) ;
+}
+
+static	void
 freeAll(gb)
     GridboxWidget	gb ;
 {
-    XtFree((char *)gb->gridbox.max_wids) ; gb->gridbox.max_wids = NULL ;
-    XtFree((char *)gb->gridbox.max_hgts) ; gb->gridbox.max_hgts = NULL ;
-    XtFree((char *)gb->gridbox.wids) ; gb->gridbox.wids = NULL ;
-    XtFree((char *)gb->gridbox.hgts) ; gb->gridbox.hgts = NULL ;
-    XtFree((char *)gb->gridbox.max_weightx) ; gb->gridbox.max_weightx = NULL ;
-    XtFree((char *)gb->gridbox.max_weighty) ; gb->gridbox.max_weighty = NULL ;
+    XtFree((char *)gb->gridbox.max_wids) ;	gb->gridbox.max_wids = NULL ;
+    XtFree((char *)gb->gridbox.max_hgts) ;	gb->gridbox.max_hgts = NULL ;
+    XtFree((char *)gb->gridbox.wids) ;		gb->gridbox.wids = NULL ;
+    XtFree((char *)gb->gridbox.hgts) ;		gb->gridbox.hgts = NULL ;
+    XtFree((char *)gb->gridbox.max_weightx) ;	gb->gridbox.max_weightx = NULL;
+    XtFree((char *)gb->gridbox.max_weighty) ;	gb->gridbox.max_weighty = NULL;
 }
 
 
@@ -799,8 +866,6 @@ computeWidHgtInfo(gb)
     Widget	*childP ;
     int		i ;
     int		nc=0, nr=0 ;
-    Dimension	*wids, *hgts ;
-    int		*weightx, *weighty ;
     int		maxgw=0, maxgh=0 ;	/* max size in cells */
     GridboxConstraints	gc ;
 
@@ -834,12 +899,7 @@ computeWidHgtInfo(gb)
     gb->gridbox.maxgw = maxgw ;
     gb->gridbox.maxgh = maxgh ;
 
-    gb->gridbox.max_wids	= wids	  = XTCALLOC(nc, Dimension) ;
-    gb->gridbox.max_hgts	= hgts	  = XTCALLOC(nr, Dimension) ;
-    gb->gridbox.wids		= XTCALLOC(nc, Dimension) ;
-    gb->gridbox.hgts		= XTCALLOC(nr, Dimension) ;
-    gb->gridbox.max_weightx	= weightx = XTCALLOC(nc, int) ;
-    gb->gridbox.max_weighty	= weighty = XTCALLOC(nr, int) ;
+    allocAll(gb) ;
 
 
     /* step 3 & 4, examine children for the size they need,
@@ -924,7 +984,7 @@ computeWidHgtMax(gb)
     }
 
     /* column heights */
-    memset(hgts, 0, nc * sizeof(Dimension)) ;
+    memset(hgts, 0, nr * sizeof(Dimension)) ;
     for(j=1; j<=maxgh; ++j)
     {
       for( i=0, childP = gb->composite.children;
@@ -980,6 +1040,7 @@ computeWidHgtUtil(idx, ncell, wid, weight, wids, weights)
 
     for(i=0; i<ncell; ++i)
     {
+      assert(idx+i >= 0) ;
       if( weights[idx+i] < weight )
 	weights[idx+i] = weight ;
       cwid += wids[idx+i] ;
@@ -990,10 +1051,13 @@ computeWidHgtUtil(idx, ncell, wid, weight, wids, weights)
     {
       excess = wid - cwid    + ncell-1 ;	/* round up */
       for(i=0; i<ncell; ++i)
+      {
+	assert(idx+i >= 0) ;
 	if( wtot == 0 )
 	  wids[idx+i] += excess/ncell ;
 	else
 	  wids[idx+i] += excess*weights[idx+i]/wtot ;
+      }
     }
 }
 
@@ -1168,6 +1232,24 @@ changeGeometry(gb, req_width,req_height, queryOnly, reply)
 
 	/* RESOURCES */
 
+
+#define done(type, value)			\
+  {						\
+    if( toVal->addr != NULL ) {			\
+      if( toVal->size < sizeof(type)) {		\
+	toVal->size = sizeof(type) ;		\
+	return False ;				\
+      }						\
+      *(type*)(toVal->addr) = (value);		\
+    }						\
+    else					\
+      toVal->addr = (XtPointer)&(value);	\
+    toVal->size = sizeof(type) ;		\
+    return True ;				\
+  }
+
+
+
 /* ARGSUSED */
 static	Boolean
 _CvtStringToFillType(dpy, args, num_args, fromVal, toVal, data)
@@ -1204,15 +1286,33 @@ _CvtStringToFillType(dpy, args, num_args, fromVal, toVal, data)
       return False ;
     }
 
-    toVal->size = sizeof(fillType) ;
-    if( toVal->addr )
-    {
-      if( toVal->size < sizeof(fillType) )
-	return False ;
-      else
-	*((int *)toVal->addr) = fillType ;
-    }
+    done(int, fillType) ;
+}
+
+
+/* ARGSUSED */
+static	Boolean
+_CvtStringToGridPosition(dpy, args, num_args, fromVal, toVal, data)
+    Display	*dpy ;
+    XrmValuePtr args;		/* unused */
+    Cardinal    *num_args;      /* unused */
+    XrmValuePtr fromVal;
+    XrmValuePtr toVal;
+    XtPointer	*data ;
+{
+    String	str = (String)fromVal->addr ;
+    static Position position ;
+
+    if( XmuCompareISOLatin1(str, "gridboxnext") == 0  ||
+	XmuCompareISOLatin1(str, "gridnext") == 0  ||
+        XmuCompareISOLatin1(str, "next") == 0 )
+      position = GRIDBOX_NEXT ;
+    else if( XmuCompareISOLatin1(str, "gridboxsame") == 0  ||
+	     XmuCompareISOLatin1(str, "gridsame") == 0 ||
+	     XmuCompareISOLatin1(str, "same") == 0 )
+      position = GRIDBOX_SAME ;
     else
-      toVal->addr = (XPointer) &fillType;
-    return True ;
+      return XtCvtStringToShort(dpy, args,num_args, fromVal, toVal, data) ;
+
+    done(Position, position) ;
 }
