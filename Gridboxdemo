@@ -1,21 +1,69 @@
-! $Id: Gridboxdemo,v 1.1 1998/08/06 23:26:24 falk Exp falk $
-
-! Application-wide actions table.
-
-Gridboxdemo.baseTranslations: #augment\n\
-	<Message>WM_PROTOCOLS: WMProtocols()\n
+! $Id: Gridboxdemo,v 1.2 1998/08/07 00:29:15 falk Rel falk $
 
 
-! defaults go here.
+*mainGrid.defaultDistance: 0
+
+! menu bar
+*menuBar.?.borderWidth: 0
+*menuBar.?.shadowWidth: 0
+*menuBar.gridy:	0
+*menuBar.fill:	Width
+*menuBar.weightx: 1
+*m0.label:	File
+*m0.gridx:	0
+*m1.label:	Edit
+*m1.gridx:	1
+*m2.label:	Help
+*m2.gridx:	2
+*m2.weightx:	1
+*m2.fill:	None
+*m2.gravity:	East
+
+! tool bar
+*toolBar.gridy:	1
+*toolBar.fill:	Width
+*toolBar.weightx: 1
+*t0.label:	Rd
+*t0.gridx:	0
+*t1.label:	Sv
+*t1.gridx:	1
+*t2.label:	New
+*t2.gridx:	2
+*t3.label:	<<
+*t3.gridx:	3
+*t4.label:	X
+*t4.gridx:	4
+*t5.label:	>>
+*t5.gridx:	5
+
+! scroll window
+*scrollGrid.gridy: 2
+*scrollGrid.fill: Both
+*scrollGrid.weightx: 1
+*scrollGrid.weighty: 1
+*scrollGrid.defaultDistance: 0
+*scrollGrid.?.borderWidth: 0
+*s1.orientation: Vertical
+*s1.gridx:	0
+*s1.gridy:	0
+*s1.fill:	Both
+*s1.weighty:	1
+*s2.orientation: Horizontal
+*s2.gridx:	1
+*s2.gridy:	1
+*s2.fill:	Both
+*s2.weightx:	1
+*sl.gridx:	1
+*sl.gridy:	0
+*sl.fill:	Both
+*sl.weightx:	1
+*sl.weighty:	1
+*sl.bitmap:	/usr/X11/include/X11/bitmaps/xlogo64
 
 *gridbox.defaultDistance: 0
-
-!*weightx:	1
-!*weighty:	1
-!*fill:		none
-!*fill:		width
-!*fill:		height
-!*fill:		both
+*gridbox.gridy: 3
+*gridbox.fill: Width
+*toolBar.weightx: 1
 
 *b0.label:	button 0
 *b0.gridx:	0
