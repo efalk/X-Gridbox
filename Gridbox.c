@@ -1,4 +1,4 @@
-/* $Id: Gridbox.c,v 1.5 1999/07/17 15:31:07 falk Exp falk $
+/* $Id: Gridbox.c,v 1.6 1999/07/17 19:54:14 falk Exp falk $
  *
  * Gridbox.c - Gridbox composite widget
  *
@@ -27,6 +27,10 @@
  * determine how they are resized if the parent widget is resized.
  *
  * $Log: Gridbox.c,v $
+ * Revision 1.6  1999/07/17 19:54:14  falk
+ * fixed bug where child doesn't accept a compromise but gridbox has already
+ * resized itself.
+ *
  * Revision 1.5  1999/07/17 15:31:07  falk
  * Re-arranged layout code.  Uses fill constraint even on initial layout
  * and child resize request.  Fixed bug when child asks to shrink.
@@ -321,12 +325,10 @@ GridboxResize(w)
     Widget	*childP;
     Position	x, y;
     Dimension	width, height;
-    int		i,j ;
+    int		i ;
     int		margin ;
-    int		weight ;
     Dimension	*wids, *hgts ;
     Position	*xs, *ys ;
-    int		mincellsize = gb->gridbox.defaultDistance * 2 + 1 ;
 
     /* determine how much space the rows & columns need */
 
@@ -363,19 +365,20 @@ GridboxResize(w)
      */
 
     for (childP = children; childP - children < num_children; childP++)
-    {
-      GridboxConstraints gc = (GridboxConstraints)(*childP)->core.constraints;
-      if (!XtIsManaged(*childP)) continue;
+      if( XtIsManaged(*childP) )
+      {
+	GridboxConstraints gc = (GridboxConstraints)(*childP)->core.constraints;
+	if (!XtIsManaged(*childP)) continue;
 
-      margin = gc->gridbox.margin ;
-      x = xs[gc->gridbox.gridx] + margin ;
-      y = ys[gc->gridbox.gridy] + margin ;
+	margin = gc->gridbox.margin ;
+	x = xs[gc->gridbox.gridx] + margin ;
+	y = ys[gc->gridbox.gridy] + margin ;
 
-      layoutChild(gb, *childP, &width, &height, &x, &y) ;
+	layoutChild(gb, *childP, &width, &height, &x, &y) ;
 
-      XtConfigureWidget(*childP,x,y, width, height,
-      	(*childP)->core.border_width );
-    }
+	XtConfigureWidget(*childP,x,y, width, height,
+	  (*childP)->core.border_width );
+      }
     gb->gridbox.needs_layout = False ;
     XtFree((char *)xs) ;
     XtFree((char *)ys) ;
@@ -693,17 +696,18 @@ getPreferredSizes(gb)
 	for( i=0, childP = gb->composite.children;
 	     i < gb->composite.num_children ;
 	     ++i, ++childP )
-	{
-	  gc = (GridboxConstraints) (*childP)->core.constraints ;
+	  if( XtIsManaged(*childP) )
+	  {
+	    gc = (GridboxConstraints) (*childP)->core.constraints ;
 
-	  if( !gc->gridbox.queried ) {
-	    (void) XtQueryGeometry(*childP, NULL, &preferred) ;
-	    margin = (gc->gridbox.margin + preferred.border_width) * 2 ;
-	    gc->gridbox.prefWidth = preferred.width + margin ;
-	    gc->gridbox.prefHeight = preferred.height + margin ;
-	    gc->gridbox.queried = True ;
+	    if( !gc->gridbox.queried ) {
+	      (void) XtQueryGeometry(*childP, NULL, &preferred) ;
+	      margin = (gc->gridbox.margin + preferred.border_width) * 2 ;
+	      gc->gridbox.prefWidth = preferred.width + margin ;
+	      gc->gridbox.prefHeight = preferred.height + margin ;
+	      gc->gridbox.queried = True ;
+	    }
 	  }
-	}
 }
 
 
@@ -789,19 +793,20 @@ computeWidHgtInfo(gb)
 
     for( i = gb->composite.num_children, childP = gb->composite.children;
 	--i >= 0; ++childP)
-    {
-      gc = (GridboxConstraints) (*childP)->core.constraints ;
+      if( XtIsManaged(*childP) )
+      {
+	gc = (GridboxConstraints) (*childP)->core.constraints ;
 
-      if( gc->gridbox.gridWidth > maxgw )
-	maxgw = gc->gridbox.gridWidth ;
-      if( gc->gridbox.gridHeight > maxgh )
-	maxgh = gc->gridbox.gridHeight ;
+	if( gc->gridbox.gridWidth > maxgw )
+	  maxgw = gc->gridbox.gridWidth ;
+	if( gc->gridbox.gridHeight > maxgh )
+	  maxgh = gc->gridbox.gridHeight ;
 
-      if( gc->gridbox.gridx + gc->gridbox.gridWidth > nc )
-	nc = gc->gridbox.gridx + gc->gridbox.gridWidth ;
-      if( gc->gridbox.gridy + gc->gridbox.gridHeight > nr )
-	nr = gc->gridbox.gridy + gc->gridbox.gridHeight ;
-    }
+	if( gc->gridbox.gridx + gc->gridbox.gridWidth > nc )
+	  nc = gc->gridbox.gridx + gc->gridbox.gridWidth ;
+	if( gc->gridbox.gridy + gc->gridbox.gridHeight > nr )
+	  nr = gc->gridbox.gridy + gc->gridbox.gridHeight ;
+      }
 
     gb->gridbox.nx = nc ;
     gb->gridbox.ny = nr ;
@@ -888,12 +893,13 @@ computeWidHgtMax(gb)
       for( i=0, childP = gb->composite.children;
 	   i < gb->composite.num_children ;
 	   ++i, ++childP )
-      {
-	gc = (GridboxConstraints) (*childP)->core.constraints ;
-	if( gc->gridbox.gridWidth == j )
-	  computeWidHgtUtil(gc->gridbox.gridx, gc->gridbox.gridWidth,
-		gc->gridbox.prefWidth, gc->gridbox.weightx, wids, weightx) ;
-      }
+	if( XtIsManaged(*childP) )
+	{
+	  gc = (GridboxConstraints) (*childP)->core.constraints ;
+	  if( gc->gridbox.gridWidth == j )
+	    computeWidHgtUtil(gc->gridbox.gridx, gc->gridbox.gridWidth,
+		  gc->gridbox.prefWidth, gc->gridbox.weightx, wids, weightx) ;
+	}
     }
 
     /* column heights */
@@ -903,12 +909,13 @@ computeWidHgtMax(gb)
       for( i=0, childP = gb->composite.children;
 	   i < gb->composite.num_children ;
 	   ++i, ++childP )
-      {
-	gc = (GridboxConstraints) (*childP)->core.constraints ;
-	if( gc->gridbox.gridHeight == j )
-	  computeWidHgtUtil(gc->gridbox.gridy, gc->gridbox.gridHeight,
-		gc->gridbox.prefHeight, gc->gridbox.weighty, hgts, weighty) ;
-      }
+	if( XtIsManaged(*childP) )
+	{
+	  gc = (GridboxConstraints) (*childP)->core.constraints ;
+	  if( gc->gridbox.gridHeight == j )
+	    computeWidHgtUtil(gc->gridbox.gridy, gc->gridbox.gridHeight,
+		  gc->gridbox.prefHeight, gc->gridbox.weighty, hgts, weighty) ;
+	}
     }
 
 
@@ -980,12 +987,8 @@ layout(gb, width, height)
     GridboxWidget gb ;
     int		width, height ;
 {
-    WidgetList children = gb->composite.children;
-    int num_children = gb->composite.num_children;
-    Widget	*childP;
     int		i,j ;
     int		excess ;
-    int		margin ;
     int		weight ;
     Dimension	*wids, *hgts ;
     int		mincellsize = gb->gridbox.defaultDistance * 2 + 1 ;
