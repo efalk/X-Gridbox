@@ -1,5 +1,5 @@
 '\" t
-." $Id: Gridbox.man,v 1.2 1999/03/06 17:00:19 falk Exp falk $
+." $Id: Gridbox.man,v 1.3 1999/03/26 23:31:40 falk Exp falk $
 ." view with "tbl | nroff -man"
 ."
 .TH "Gridbox" 3 "Aug 1998" "Version 1.0" ""
@@ -107,15 +107,15 @@ If all weights are zero, the rows and columns are not resized.
 
 
 .SH PROGRAMMING TIPS
-Every child of a Gridbox widget \fImust\fP be assigned \fBgridx\fP
+Every child of a Gridbox widget must be assigned \fBgridx\fP
 and \fBgridy\fP
 constraints, or they will all overlap each other in the upper-left corner
 of the Gridbox.
 .LP
 \fINote:\fP unless, of course, this is what you want.  If all Gridbox
-children are assigned the same cell, they will also be assigned the
-same dimensions.  You could then control their visibility by altering
-their stacking order.
+children are assigned the same cell, with \fBfill\fP set to \fBboth\fP,
+they will also be assigned the same dimensions.  You could then control
+their visibility by altering their stacking order.
 .LP
 A menu bar may be created in Athena through the use of a grid box:
 .IP 1
@@ -134,7 +134,27 @@ is set to \fBeast\fP so that the button is at the east end of the menu bar.
 Alternatively, a blank label widget (or perhaps one containing a logo) is
 placed between the left buttons and the Help button, and allowed to fill
 the available space.
+.LP
+A note on geometry management:  In the intrinsics library, widget layout
+and sizing is done through negotiation.  A widget asks to be a certain
+size, and its manager either grants the request, denies it, or
+offers a compromise.  The requesting widget may then ask for the compromise.
+.LP
+When a widget's \fBfill\fP constraint resource is not set to \fBnone\fP,
+it will most likely be offerred a size compromise larger than
+it requested.
+.LP
+Some widgets, for example the Athena Label widget, never accept compromises.
+Further, the Label widget \fIalways\fP asks to be resized whenever its
+label changes.  As a result of all this, \fBfill\fP constraint of
+an Athena Label -- and probably other widgets as well -- should be set
+to \fBnone\fP if you encounter problems with widget resizing.
 
+
+.SH BUGS
+
+Motif keyboard traversal may not work within Gridbox.  Motif Text
+widgets may not work properly for this reason.
 
 
 .SH AUTHOR
