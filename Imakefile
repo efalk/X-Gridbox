@@ -1,6 +1,6 @@
-# $Id$
+XCOMM $Id: Imakefile,v 1.1 1998/08/06 23:28:06 falk Rel falk $
 
-#CDEBUGFLAGS = -g -DDEBUG -pedantic -Wall
+XCOMM CDEBUGFLAGS = -g -DDEBUG -pedantic -Wall
 
 LOCAL_LIBRARIES = XawClientLibs
 
