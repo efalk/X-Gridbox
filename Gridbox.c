@@ -1,4 +1,4 @@
-/* $Id: Gridbox.c,v 2.0 1999/10/19 21:48:34 falk Exp falk $
+/* $Id: Gridbox.c,v 2.1 1999/12/12 06:05:06 falk Exp falk $
  *
  * Gridbox.c - Gridbox composite widget
  *
@@ -27,39 +27,42 @@
  * determine how they are resized if the parent widget is resized.
  *
  * $Log: Gridbox.c,v $
- * Revision 2.0  1999/10/19 21:48:34  falk
+ * Revision 2.1	 1999/12/12 06:05:06  falk
+ * Added "next" and "same" grid position values.
+ * Fixed bugs related to malloc/free.
+ *
+ * Revision 2.0	 1999/10/19 21:48:34  falk
  * Motif compatibility
  *
- * Revision 1.7  1999/07/30 17:11:57  falk
+ * Revision 1.7	 1999/07/30 17:11:57  falk
  * now ignores unmanaged children
  *
- * Revision 1.6  1999/07/17 19:54:14  falk
+ * Revision 1.6	 1999/07/17 19:54:14  falk
  * fixed bug where child doesn't accept a compromise but gridbox has already
  * resized itself.
  *
- * Revision 1.5  1999/07/17 15:31:07  falk
+ * Revision 1.5	 1999/07/17 15:31:07  falk
  * Re-arranged layout code.  Uses fill constraint even on initial layout
  * and child resize request.  Fixed bug when child asks to shrink.
  *
- * Revision 1.4  1999/07/01 16:33:56  falk
+ * Revision 1.4	 1999/07/01 16:33:56  falk
  * Added more caching of width/height info.  Handles query-only and
  * rejected requests much better.
  *
- * Revision 1.3  1999/03/26 18:50:54  falk
+ * Revision 1.3	 1999/03/26 18:50:54  falk
  * Does not attempt to recompute anything if no children
  *
- * Revision 1.2  1998/08/07 03:07:24  falk
+ * Revision 1.2	 1998/08/07 03:07:24  falk
  * string => fill style converter slightly more robust
  *
- * Revision 1.1  1998/08/06 23:27:06  falk
+ * Revision 1.1	 1998/08/06 23:27:06  falk
  * Initial revision
  *
  *
  * General theory of operation:
  *
- * Each child widget has its own "preferred" size, which is queried the
- * first time the widget is seen by Gridbox, and the preferred size is
- * cached, along with the child's constraints (cell size, margin, weight).
+ * Each child widget has its own "preferred" size, which is queried during
+ * the geometry management process.
  *
  * Gridbox maintains arrays of preferred column widths and row heights
  * based on the maximum values of the child widgets in those rows and
@@ -99,7 +102,7 @@
 #include <X11/Xmu/CharSet.h>
 #include "GridboxP.h"
 
-#define	DEFAULT_MARGIN	-1
+#define DEFAULT_MARGIN	-1
 
 #define Offset(field) XtOffsetOf(GridboxRec, gridbox.field)
 static XtResource resources[] = {
@@ -136,7 +139,7 @@ static	void	GridboxClassInit() ;
 static	void	GridboxInit(Widget request, Widget new, ArgList, Cardinal *) ;
 static	void	GridboxExpose(Widget w, XEvent *event, Region region) ;
 static	void	GridboxResize(Widget w) ;
-static	Boolean	GridboxSetValues(Widget, Widget, Widget, ArgList, Cardinal *) ;
+static	Boolean GridboxSetValues(Widget, Widget, Widget, ArgList, Cardinal *) ;
 static	void	GridboxDestroy(Widget w) ;
 static	XtGeometryResult
 	  GridboxQueryGeometry(Widget, XtWidgetGeometry *, XtWidgetGeometry *) ;
@@ -164,20 +167,20 @@ static	void	layoutChild(GridboxWidget, Widget, Dimension *, Dimension *,
 static	XtGeometryResult
 	      changeGeometry(GridboxWidget, int, int, int, XtWidgetGeometry *) ;
 
-static	Boolean	_CvtStringToFillType(Display *, XrmValuePtr, Cardinal *,
+static	Boolean _CvtStringToFillType(Display *, XrmValuePtr, Cardinal *,
 			XrmValuePtr, XrmValuePtr, XtPointer *) ;
-static	Boolean	_CvtStringToGridPosition(Display *, XrmValuePtr, Cardinal *,
+static	Boolean _CvtStringToGridPosition(Display *, XrmValuePtr, Cardinal *,
 			XrmValuePtr, XrmValuePtr, XtPointer *) ;
 #else
 static	void	GridboxClassInit() ;
 static	void	GridboxInit() ;
 static	void	GridboxExpose() ;
 static	void	GridboxResize() ;
-static	Boolean	GridboxSetValues() ;
+static	Boolean GridboxSetValues() ;
 static	void	GridboxDestroy() ;
 static	void	GridboxChangeManaged() ;
 static	void	GridboxConstraintInit() ;
-static	Boolean	GridboxConstraintSetValues() ;
+static	Boolean GridboxConstraintSetValues() ;
 static	void	getPreferredSizes() ;
 static	void	computeCellSize() ;
 static	void	freeAll() ;
@@ -188,20 +191,20 @@ static	void	layoutChild() ;
 static	XtGeometryResult	GridboxQueryGeometry() ;
 static	XtGeometryResult	GridboxGeometryManager() ;
 static	XtGeometryResult	changeGeometry() ;
-static	Boolean	_CvtStringToFillType() ;
-static	Boolean	_CvtStringToGridPosition() ;
+static	Boolean _CvtStringToFillType() ;
+static	Boolean _CvtStringToGridPosition() ;
 #endif
 
-#define	XTCALLOC(n,type)	((type *) XtCalloc((n), sizeof(type)))
+#define XTCALLOC(n,type)	((type *) XtCalloc((n), sizeof(type)))
 
-#ifndef	min
-#define	min(a,b)	((a)<(b)?(a):(b))
-#define	max(a,b)	((a)>(b)?(a):(b))
+#ifndef min
+#define min(a,b)	((a)<(b)?(a):(b))
+#define max(a,b)	((a)>(b)?(a):(b))
 #endif
 
 
 #ifdef	DEBUG
-#define	assert(e)	do { if( !(e) ) assfail(#e,__LINE__);} while(0)
+#define assert(e)	do { if( !(e) ) assfail(#e,__LINE__);} while(0)
 static	void
 assfail(char *e, int line)
 {
@@ -209,68 +212,68 @@ assfail(char *e, int line)
     e, __FILE__, line) ;
 }
 #else
-#define	assert(e)
+#define assert(e)
 #endif
 
 
 
 
-#ifndef	USE_MOTIF
-#define	SuperClass	(&constraintClassRec)
+#ifndef USE_MOTIF
+#define SuperClass	(&constraintClassRec)
 #else
-#define	SuperClass	(&xmManagerClassRec)
+#define SuperClass	(&xmManagerClassRec)
 #endif
 
-GridboxClassRec	gridboxClassRec = {
+GridboxClassRec gridboxClassRec = {
   { /* core_class fields */
-    /* superclass         */    (WidgetClass) SuperClass,
-    /* class_name         */    "Gridbox",
-    /* widget_size        */    sizeof(GridboxRec),
-    /* class_initialize   */    GridboxClassInit,
-    /* class_part_init    */    NULL,
-    /* class_inited       */    FALSE,
-    /* initialize         */    GridboxInit,
-    /* initialize_hook    */    NULL,
-    /* realize            */    XtInheritRealize,
-    /* actions            */    NULL,
-    /* num_actions        */    0,
-    /* resources          */    resources,
-    /* num_resources      */    XtNumber(resources),
-    /* xrm_class          */    NULLQUARK,
-    /* compress_motion    */    TRUE,
-    /* compress_exposure  */    TRUE,
-    /* compress_enterleave*/    TRUE,
-    /* visible_interest   */    FALSE,
-    /* destroy            */    GridboxDestroy,
-    /* resize             */    GridboxResize,
-    /* expose             */    GridboxExpose,
-    /* set_values         */    GridboxSetValues,
-    /* set_values_hook    */    NULL,
-    /* set_values_almost  */    XtInheritSetValuesAlmost,
-    /* get_values_hook    */    NULL,
-    /* accept_focus       */    NULL,
-    /* version            */    XtVersion,
-    /* callback_private   */    NULL,
-    /* tm_table           */    NULL,
-    /* query_geometry     */	GridboxQueryGeometry,
+    /* superclass	  */	(WidgetClass) SuperClass,
+    /* class_name	  */	"Gridbox",
+    /* widget_size	  */	sizeof(GridboxRec),
+    /* class_initialize	  */	GridboxClassInit,
+    /* class_part_init	  */	NULL,
+    /* class_inited	  */	FALSE,
+    /* initialize	  */	GridboxInit,
+    /* initialize_hook	  */	NULL,
+    /* realize		  */	XtInheritRealize,
+    /* actions		  */	NULL,
+    /* num_actions	  */	0,
+    /* resources	  */	resources,
+    /* num_resources	  */	XtNumber(resources),
+    /* xrm_class	  */	NULLQUARK,
+    /* compress_motion	  */	TRUE,
+    /* compress_exposure  */	TRUE,
+    /* compress_enterleave*/	TRUE,
+    /* visible_interest	  */	FALSE,
+    /* destroy		  */	GridboxDestroy,
+    /* resize		  */	GridboxResize,
+    /* expose		  */	GridboxExpose,
+    /* set_values	  */	GridboxSetValues,
+    /* set_values_hook	  */	NULL,
+    /* set_values_almost  */	XtInheritSetValuesAlmost,
+    /* get_values_hook	  */	NULL,
+    /* accept_focus	  */	NULL,
+    /* version		  */	XtVersion,
+    /* callback_private	  */	NULL,
+    /* tm_table		  */	NULL,
+    /* query_geometry	  */	GridboxQueryGeometry,
     /* display_accelerator*/	XtInheritDisplayAccelerator,
-    /* extension          */	NULL
+    /* extension	  */	NULL
   },
   { /* composite_class fields */
-    /* geometry_manager   */   GridboxGeometryManager,
-    /* change_managed     */   GridboxChangeManaged,
-    /* insert_child       */   XtInheritInsertChild,
-    /* delete_child       */   XtInheritDeleteChild,
-    /* extension          */   NULL
+    /* geometry_manager	  */   GridboxGeometryManager,
+    /* change_managed	  */   GridboxChangeManaged,
+    /* insert_child	  */   XtInheritInsertChild,
+    /* delete_child	  */   XtInheritDeleteChild,
+    /* extension	  */   NULL
   },
   { /* constraint_class fields */
-    /* subresourses       */   gridboxConstraintResources,
+    /* subresourses	  */   gridboxConstraintResources,
     /* subresource_count  */   XtNumber(gridboxConstraintResources),
-    /* constraint_size    */   sizeof(GridboxConstraintsRec),
-    /* initialize         */   GridboxConstraintInit,
-    /* destroy            */   NULL,
-    /* set_values         */   GridboxConstraintSetValues,
-    /* extension          */   NULL
+    /* constraint_size	  */   sizeof(GridboxConstraintsRec),
+    /* initialize	  */   GridboxConstraintInit,
+    /* destroy		  */   NULL,
+    /* set_values	  */   GridboxConstraintSetValues,
+    /* extension	  */   NULL
   },
 #ifdef	USE_MOTIF
 /* Manager Class fields */
@@ -278,7 +281,7 @@ GridboxClassRec	gridboxClassRec = {
     /* translations		*/	NULL,
     /* syn_resources		*/	NULL,
     /* num_syn_resources	*/	0,
-    /* syn_constraint_resources	*/	NULL,
+    /* syn_constraint_resources */	NULL,
     /* num_syn_constraint_resources */	0,
     /* parent_process		*/	XmInheritParentProcess,
     /* extension		*/	NULL
@@ -441,7 +444,7 @@ GridboxSetValues(current, request, new, args, num_args)
     ArgList args;
     Cardinal *num_args;
 {
-    /* The only resource is the default margin.  I don't
+    /* The only resource is the default margin.	 I don't
      * think there's any reason to react to changes therein, so
      * this function does nothing.
      */
@@ -483,7 +486,7 @@ GridboxQueryGeometry( widget, request, reply  )
     /* We always offer our preferred size as a compromise.  */
 
     if( (request->request_mode & CWWidth) &&
-    		request->width == gb->core.width  &&
+		request->width == gb->core.width  &&
 	(request->request_mode & CWHeight) &&
 		request->height == gb->core.height )
       return XtGeometryNo;
@@ -554,9 +557,9 @@ GridboxGeometryManager(w, request, reply)
     /* TODO: allow border requests. */
 
     if( ((request->request_mode & CWX) && request->x != w->core.x)  ||
-        ((request->request_mode & CWY) && request->y != w->core.y)  ||
-        ((request->request_mode & CWBorderWidth) &&
-			request->border_width != w->core.border_width) )
+	((request->request_mode & CWY) && request->y != w->core.y)  ||
+	((request->request_mode & CWBorderWidth) &&
+			  request->border_width != w->core.border_width) )
       return XtGeometryNo ;
 
 #ifdef	COMMENT
@@ -680,9 +683,7 @@ GridboxConstraintInit(request, new, args, num_args)
     GridboxWidget gb = (GridboxWidget)new->core.parent;
 
     if( gc->gridbox.margin < 0 )
-        gc->gridbox.margin = gb->gridbox.defaultDistance;
-
-    gc->gridbox.queried = False ;
+	gc->gridbox.margin = gb->gridbox.defaultDistance;
 
     /* TODO: how about resources that cause a child to use all
      * remaining space, or to start a new row?
@@ -703,12 +704,12 @@ GridboxConstraintSetValues(current, request, new, args, num_args)
 {
   GridboxConstraints gcCur = (GridboxConstraints) current->core.constraints;
   GridboxConstraints gcNew = (GridboxConstraints) new->core.constraints;
-  GridboxWidget	gb = (GridboxWidget) XtParent(new) ;
+  GridboxWidget gb = (GridboxWidget) XtParent(new) ;
 
   if (gcCur->gridbox.gridx	!= gcNew->gridbox.gridx		||
       gcCur->gridbox.gridy	!= gcNew->gridbox.gridy		||
       gcCur->gridbox.gridWidth	!= gcNew->gridbox.gridWidth	||
-      gcCur->gridbox.gridHeight	!= gcNew->gridbox.gridHeight )
+      gcCur->gridbox.gridHeight != gcNew->gridbox.gridHeight )
   {
       freeAll(gb) ;
       getPreferredSizes(gb) ;
@@ -723,11 +724,6 @@ GridboxConstraintSetValues(current, request, new, args, num_args)
   {
       gb->gridbox.needs_layout = True ;
   }
-
-#ifdef	COMMENT
-  if( gb->gridbox.needs_layout )
-    GridboxChangeManaged((Widget)gb) ;
-#endif	/* COMMENT */
 
   return False ;		/* what does this signify? */
 }
@@ -766,7 +762,6 @@ getPreferredSizes(gb)
 	    margin = (gc->gridbox.margin + preferred.border_width) * 2 ;
 	    gc->gridbox.prefWidth = preferred.width + margin ;
 	    gc->gridbox.prefHeight = preferred.height + margin ;
-	    gc->gridbox.queried = True ;
 
 	    if( gc->gridbox.gridx == GRIDBOX_NEXT )
 	      gc->gridbox.gridx = prevc == NULL ? 0 :
@@ -874,7 +869,7 @@ computeWidHgtInfo(gb)
 
     freeAll(gb) ;		/* start with clean slate */
 
-    /* step 2:  Find out how many rows & columns there will be.
+    /* step 2:	Find out how many rows & columns there will be.
      */
 
     for( i = gb->composite.num_children, childP = gb->composite.children;
@@ -915,10 +910,10 @@ computeWidHgtInfo(gb)
 	/*
 	 * Compute desired sizes for all rows & columns:
 	 *   a) for all single-celled children, set the max desired
-	 *      size for the corresponding rows & columns.
+	 *	size for the corresponding rows & columns.
 	 *   b) for all two-column children, set the max desired
-	 *      size for both of the corresponding columns
-	 *      by distributing the excess proportionally.
+	 *	size for both of the corresponding columns
+	 *	by distributing the excess proportionally.
 	 *   c) repeat for two-row children.
 	 *   d) repeat for three-column, children
 	 *   e) repeat for three-row children.
@@ -928,7 +923,7 @@ computeWidHgtInfo(gb)
 	 *   guaranteed to find the optimum row & column sizes.
 	 *   I will have to give this some more thought.
 	 *
-	 * Compute sums of row & column sizes.  This is our own
+	 * Compute sums of row & column sizes.	This is our own
 	 *    preferred size.
 	 */
 
@@ -952,8 +947,8 @@ computeWidHgtMax(gb)
     maxgw = gb->gridbox.maxgw ;
     maxgh = gb->gridbox.maxgh ;
 
-    wids = gb->gridbox.max_wids	;
-    hgts = gb->gridbox.max_hgts	;
+    wids = gb->gridbox.max_wids ;
+    hgts = gb->gridbox.max_hgts ;
     weightx = gb->gridbox.max_weightx ;
     weighty = gb->gridbox.max_weighty ;
 
@@ -1027,11 +1022,11 @@ computeWidHgtUtil(idx, ncell, wid, weight, wids, weights)
     int			*weights ;
 {
     /* 1 set the specified column weight(s) to the max of their current
-     *   value and the weight of this widget.
+     *	 value and the weight of this widget.
      *
      * 2 find out if the available space in the indicated column(s)
-     *   is enough to satisfy this widget.  If not, distribute the
-     *   excess size by column weights.
+     *	 is enough to satisfy this widget.  If not, distribute the
+     *	 excess size by column weights.
      */
 
     int		i, cwid = 0 ;
@@ -1133,7 +1128,7 @@ layoutChild(gb, w, rwid,rhgt, rx,ry)
     computeCellSize(gb, gc, &width,&height) ;
 
     /* Correct for preferred fill & alignment */
-    if( !(gc->gridbox.fill & FillWidth)  &&
+    if( !(gc->gridbox.fill & FillWidth)	 &&
 	(excess = width - gc->gridbox.prefWidth) > 0 )
     {
       switch( gc->gridbox.gravity ) {
@@ -1172,7 +1167,7 @@ layoutChild(gb, w, rwid,rhgt, rx,ry)
 
 
 
-	/* Make size change request.  Always return the resulting size.  */
+	/* Make size change request.  Always return the resulting size.	 */
 
 static	XtGeometryResult
 changeGeometry(gb, req_width,req_height, queryOnly, reply)
@@ -1184,7 +1179,7 @@ changeGeometry(gb, req_width,req_height, queryOnly, reply)
     XtGeometryResult	result ;
     Dimension	old_width = gb->core.width, old_height = gb->core.height;
 
-    if( req_width != gb->core.width  ||  req_height != gb->core.height )
+    if( req_width != gb->core.width  ||	 req_height != gb->core.height )
     {
       XtWidgetGeometry myrequest ;
 
@@ -1255,7 +1250,7 @@ static	Boolean
 _CvtStringToFillType(dpy, args, num_args, fromVal, toVal, data)
     Display	*dpy ;
     XrmValuePtr args;		/* unused */
-    Cardinal    *num_args;      /* unused */
+    Cardinal	*num_args;	/* unused */
     XrmValuePtr fromVal;
     XrmValuePtr toVal;
     XtPointer	*data ;
@@ -1264,22 +1259,22 @@ _CvtStringToFillType(dpy, args, num_args, fromVal, toVal, data)
     static int	fillType;
 
     if( XmuCompareISOLatin1(str, "none") == 0  ||
-        XmuCompareISOLatin1(str, "fillnone") == 0 )
+	XmuCompareISOLatin1(str, "fillnone") == 0 )
       fillType = FillNone ;
     else if( XmuCompareISOLatin1(str, "width") == 0  ||
-	     XmuCompareISOLatin1(str, "fillwidth") == 0  ||
+	     XmuCompareISOLatin1(str, "fillwidth") == 0	 ||
 	     XmuCompareISOLatin1(str, "horizontal") == 0  ||
 	     XmuCompareISOLatin1(str, "x") == 0 )
       fillType = FillWidth ;
     else if( XmuCompareISOLatin1(str, "height") == 0  ||
 	     XmuCompareISOLatin1(str, "fillheight") == 0  ||
-	     XmuCompareISOLatin1(str, "vertical") == 0  ||
+	     XmuCompareISOLatin1(str, "vertical") == 0	||
 	     XmuCompareISOLatin1(str, "y") == 0 )
       fillType = FillHeight ;
     else if( XmuCompareISOLatin1(str, "both") == 0  ||
-             XmuCompareISOLatin1(str, "fillboth") == 0  ||
-             XmuCompareISOLatin1(str, "all") == 0  ||
-             XmuCompareISOLatin1(str, "xy") == 0 )
+	     XmuCompareISOLatin1(str, "fillboth") == 0	||
+	     XmuCompareISOLatin1(str, "all") == 0  ||
+	     XmuCompareISOLatin1(str, "xy") == 0 )
       fillType = FillBoth ;
     else {
       XtStringConversionWarning(fromVal->addr, XtRFillType);
@@ -1295,7 +1290,7 @@ static	Boolean
 _CvtStringToGridPosition(dpy, args, num_args, fromVal, toVal, data)
     Display	*dpy ;
     XrmValuePtr args;		/* unused */
-    Cardinal    *num_args;      /* unused */
+    Cardinal	*num_args;	/* unused */
     XrmValuePtr fromVal;
     XrmValuePtr toVal;
     XtPointer	*data ;
@@ -1305,7 +1300,7 @@ _CvtStringToGridPosition(dpy, args, num_args, fromVal, toVal, data)
 
     if( XmuCompareISOLatin1(str, "gridboxnext") == 0  ||
 	XmuCompareISOLatin1(str, "gridnext") == 0  ||
-        XmuCompareISOLatin1(str, "next") == 0 )
+	XmuCompareISOLatin1(str, "next") == 0 )
       position = GRIDBOX_NEXT ;
     else if( XmuCompareISOLatin1(str, "gridboxsame") == 0  ||
 	     XmuCompareISOLatin1(str, "gridsame") == 0 ||
