@@ -1,4 +1,4 @@
-/* $Id$
+/* $Id: Gridbox.c,v 1.1 1998/08/06 23:27:06 falk Exp falk $
  *
  * Gridbox.c - Gridbox composite widget
  *
@@ -26,7 +26,10 @@
  * In addition, child widgets may specify a margin, and weights which
  * determine how they are resized if the parent widget is resized.
  *
- * $Log$
+ * $Log: Gridbox.c,v $
+ * Revision 1.1  1998/08/06 23:27:06  falk
+ * Initial revision
+ *
  */
 
 #include <X11/IntrinsicP.h>
@@ -952,17 +955,21 @@ _CvtStringToFillType(dpy, args, num_args, fromVal, toVal, data)
     String	str = (String)fromVal->addr ;
     static int	fillType;
 
-    if( XmuCompareISOLatin1(str, "none") == 0 )
+    if( XmuCompareISOLatin1(str, "none") == 0  ||
+        XmuCompareISOLatin1(str, "fillnone") == 0 )
       fillType = FillNone ;
     else if( XmuCompareISOLatin1(str, "width") == 0  ||
+	     XmuCompareISOLatin1(str, "fillwidth") == 0  ||
 	     XmuCompareISOLatin1(str, "horizontal") == 0  ||
 	     XmuCompareISOLatin1(str, "x") == 0 )
       fillType = FillWidth ;
     else if( XmuCompareISOLatin1(str, "height") == 0  ||
+	     XmuCompareISOLatin1(str, "fillheight") == 0  ||
 	     XmuCompareISOLatin1(str, "vertical") == 0  ||
 	     XmuCompareISOLatin1(str, "y") == 0 )
       fillType = FillHeight ;
     else if( XmuCompareISOLatin1(str, "both") == 0  ||
+             XmuCompareISOLatin1(str, "fillboth") == 0  ||
              XmuCompareISOLatin1(str, "all") == 0  ||
              XmuCompareISOLatin1(str, "xy") == 0 )
       fillType = FillBoth ;
