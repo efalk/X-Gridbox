@@ -1,4 +1,4 @@
-# $Id$
+# $Id: Makefile.sunos,v 1.1 1998/08/06 23:43:49 falk Rel $
 
 CC = gcc
 

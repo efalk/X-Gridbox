@@ -1,4 +1,4 @@
-/* $Id: Gridbox.h,v 1.4 1999/12/12 06:07:17 falk Exp falk $
+/* $Id: Gridbox.h,v 1.5 2002/05/08 20:07:20 falk Exp $
  *
  * This widget manages multiple child widgets, arranging them in a
  * rectangular grid.  Child widgets may occupy multiple grid cells.

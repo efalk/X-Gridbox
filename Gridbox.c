@@ -1,4 +1,4 @@
-/* $Id: Gridbox.c,v 2.3 2000/01/29 22:02:03 falk Exp falk $
+/* $Id: Gridbox.c,v 2.4 2002/05/08 20:08:22 falk Exp falk $
  *
  * Gridbox.c - Gridbox composite widget
  *
@@ -27,6 +27,9 @@
  * determine how they are resized if the parent widget is resized.
  *
  * $Log: Gridbox.c,v $
+ * Revision 2.4  2002/05/08 20:08:22  falk
+ * added allowResize child constraint.  Improved layout management.
+ *
  * Revision 2.3  2000/01/29 22:02:03  falk
  * Now recomputes child sizes always.
  *
@@ -78,7 +81,7 @@
  * requests.
  *
  * When a child widget asks to be resized, Gridbox updates the cached preferred
- * size for the child, recomputes its own preferred size accordingly, and akss
+ * size for the child, recomputes its own preferred size accordingly, and asks
  * its parent to be resized.  Once negotiations with the parent are complete,
  * Gridbox then computes the new size of the child and responds to the child's
  * request.
@@ -86,6 +89,10 @@
  * Whenever the Gridbox is resized, it determines how much extra space there
  * is (if any), and distributes it among the rows and columns based on the
  * weights of those rows & columns.
+ *
+ * Note:  Specifications (and loop prevention) require that if Gridbox
+ * cannot accomodate a child request and offers a compromise, that
+ * compromise must be accepted if the child asks for it.
  *
  *
  * Internal functions related to geometry management:
@@ -552,7 +559,8 @@ GridboxChangeManaged(w)
 	 *
 	 * RULE:  If we offer the child a compromise; it must be
 	 * a compromise we'll accept on the next call.  Lesstif will
-	 * squawk if we don't do this.
+	 * squawk if we don't do this.  Also, infinite loops can
+	 * result.
 	 */
 
 static	XtGeometryResult
@@ -573,15 +581,10 @@ GridboxGeometryManager(w, request, reply)
     int			margin ;
     Position		x,y ;
 
-    /* Position & border requests always denied */
-    /* TODO: allow border requests. */
+    /* Position requests always denied */
 
     if( ((request->request_mode & CWX) && request->x != w->core.x)  ||
 	((request->request_mode & CWY) && request->y != w->core.y) )
-#ifdef	COMMENT
-	((request->request_mode & CWBorderWidth) &&
-			  request->border_width != w->core.border_width) )
-#endif	/* COMMENT */
       return XtGeometryNo ;
 
     /* Make all three fields in the request valid */
@@ -704,10 +707,19 @@ GridboxGeometryManager(w, request, reply)
       }
     }
 
+    /* TODO: this needs to be re-worked.  If we offer a compromise,
+     * it MUST be one that will be accepted on the next call.  Unfortunately,
+     * it doesn't work that way because we always try to distribute
+     * excess space to the children.  This can result in the next call
+     * giving a different answer than this one did.
+     */
+#ifdef	COMMENT
     reply->width = cell_width - margin ;
     reply->height = cell_height - margin ;
     reply->request_mode = CWWidth | CWHeight ;
     return XtGeometryAlmost ;
+#endif	/* COMMENT */
+    return XtGeometryNo ;
 }
 
 

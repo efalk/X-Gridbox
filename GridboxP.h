@@ -1,4 +1,4 @@
-/* $Id: GridboxP.h,v 2.1 1999/12/12 07:27:33 falk Exp falk $
+/* $Id: GridboxP.h,v 2.2 2002/05/08 20:07:40 falk Exp $
  *
  * GridboxP.h - Private definitions for Gridbox widget
  */

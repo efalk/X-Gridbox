@@ -1,5 +1,5 @@
 '\" t
-." $Id: Gridbox.man,v 1.5 1999/07/30 17:19:59 falk Exp falk $
+." $Id: Gridbox.man,v 1.6 1999/12/12 06:07:17 falk Exp $
 ." view with "tbl | nroff -man"
 ."
 .TH "Gridbox" 3 "Aug 1998" "Version 1.0" ""

@@ -1,4 +1,4 @@
-static	char	rcsid[] = "$Id: gridboxdemo.c,v 1.4 1999/07/30 17:12:39 falk Exp falk $" ;
+static	char	rcsid[] = "$Id: gridboxdemo.c,v 1.5 1999/12/12 07:26:14 falk Exp $" ;
 
 #include <stdio.h>
 #include <stdlib.h>

@@ -1,16 +1,21 @@
-XCOMM $Id: Imakefile,v 1.2 1999/03/26 23:31:25 falk Exp falk $
+XCOMM $Id: Imakefile,v 2.0 1999/10/19 21:50:50 falk Exp $
 
-# CDEBUGFLAGS = -g -DDEBUG -pedantic -Wall
+CDEBUGFLAGS = -g -DDEBUG -pedantic -Wall
 
 # EXTRA_DEFINES = -DUSE_MOTIF
 
-LOCAL_LIBRARIES = XawClientLibs
+#LOCAL_LIBRARIES = XawClientLibs
+
+INCLUDES = -I../XawM
+#LOCAL_LIBRARIES = ../XawM/libXawM_d.a $(XMULIB) $(XTOOLLIB) $(XLIB)
+LOCAL_LIBRARIES = ../XawM/libXawM.a $(XMULIB) $(XTOOLLIB) $(XLIB)
+
 
 MANPATH = /usr/local/man
 BINDIR = /usr/local/bin
 
 
-SRCS = gridboxdemo.c Gridbox.c
+SRCS = test1.c Gridbox.c
 OBJS = $(SRCS:.c=.o)
 
-ComplexProgramTarget(gridboxdemo)
+ComplexProgramTarget(test1)
