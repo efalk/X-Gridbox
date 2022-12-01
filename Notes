@@ -1,0 +1,42 @@
+
+
+Problem:
+
+	Gridbox mainPanel
+	  Gridbox prompts
+	    xmFrame promptFrame
+	    xmFrame prompt2Frame
+	    xmFrame mousePanel
+
+
+initial state:
+	mainPanel 697 x 626
+	  prompt 697 x 66
+	    promptFrame 639 x 33
+	    promptFrame2 639x33
+	    mousePanel 58x66
+
+promptFrame requests 10x10:
+	computeWidHgtMax()
+	  children want 10x10, 52x23, 58x66
+	  nx = 2, ny = 2
+	  computeUtil()
+	    promptFrame is one cell, height=10, weight = 0, hgts[0] = 10
+	    promptFrame2 is one cell, height=23, weight = 0, hgts[1] = 23
+	    mousePanel is 2 cells, height=66, weight=0, excess = 34,
+	    						hgts[] = {27,40}
+	  wids =  {52,58}, total = 110
+	  hgts = {27,40}, total = 67  (???)
+	  	rounding has added one unneeded pixel to gridbox height!
+
+	Asks parent for 110x67
+	Receive 697x67
+	Offer 639x27 to child
+
+promptFrame requests 639x27:
+	computeWidHgtMax()
+	  children want 639x27, 52x23, 58x66
+	  computeUtil()
+	    mousePanel is 2 cells, height=66, weight=0, excess = 17
+	    						hgts[] = {27,40}
+	   No round-up this time!
