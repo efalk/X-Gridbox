@@ -12,9 +12,9 @@ Description:	Constraint widget.
 		depends on no other widgets or libraries.
 		Compile with -DUSE_MOTIF for Motif compatibility.
 Keywords:	X11 Xt Intrinsics grid widget
-Author:		falk@falconer.vip.best.com (Edward A. Falk)
-Maintained-by:	falk@falconer.vip.best.com (Edward A. Falk)
-Primary-site:	www.best.com/~falconer/Widgets/#gridbox
+Author:		falk@efalk.org (Edward A. Falk)
+Maintained-by:	falk@efalk.org (Edward A. Falk)
+Primary-site:	www.efalk.org/Widgets/#gridbox
 Alternate-site: ftp.x.org /contrib/widgets/
 		24k Gridbox.tar.gz
 Original-site:	

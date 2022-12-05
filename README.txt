@@ -2,7 +2,7 @@
 
 Gridbox 2.0 -- arrange child widgets in a configurable grid.
 
-	Written by Edward A. Falk <falk@falconer.vip.best.com>
+	Written by Edward A. Falk <falk@efalk.org>
 
     The Gridbox widget manages several children, displaying them in rows
     and columns.  Rows and columns are sized according to the needs of

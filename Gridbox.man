@@ -169,7 +169,7 @@ You tell me.
 
 
 .SH AUTHOR
-Edward Falk <falk@falconer.vip.best.com>
+Edward Falk <falk@efalk.org>
 
 .SH COPYRIGHT
 Copyright 1999 by Edward A. Falk.  This widget may be used freely in any

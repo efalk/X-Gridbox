@@ -3,7 +3,7 @@
  * Gridbox.c - Gridbox composite widget
  *
  * Author: Edward A. Falk
- *	   falk@falconer.vip.best.com
+ *	   falk@efalk.org
  *
  * Date: August 1998
  *
